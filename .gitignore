@@ -1,0 +1,28 @@
+# Python Cache Files (speeds up repository and prevents clutter)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+.venv/
+env/
+venv/
+ENV/
+
+# Local SQLite Databases (Prevents overwriting live customer orders on Render)
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# Environment Variables & Secret Keys
+.env
+.flaskenv
+
+# IDE / Editor Settings
+.vscode/
+.idea/
+
+# Operating System Files
+.DS_Store
+Thumbs.db
