@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us - Sudarshan Food Production</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/farar.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/sudharshan icon.png') }}">
+    <style>
+        .page-banner {
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .page-banner img {
+            width: 100%;
+            height: auto;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            object-fit: cover;
+        }
+        .about-content-card {
+            max-width: 1100px;
+            margin: 2rem auto;
+            background: #ffffff;
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+        }
+        .about-content-card h2 {
+            color: var(--primary-dark);
+            margin-bottom: 1rem;
+        }
+        .about-content-card p {
+            color: var(--text-dark);
+            font-size: 1.05rem;
+            line-height: 1.8;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <nav class="nav-container">
+            <a href="{{ url_for('home') }}" class="brand-logo">
+                <img src="{{ url_for('static', filename='images/sudarshanlogo.png') }}" alt="Logo">
+                <span class="brand-title">SUDARSHAN FOODS</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('home') }}">Home</a></li>
+                <li><a href="{{ url_for('about') }}">About Us</a></li>
+                <li><a href="{{ url_for('ingredients') }}">Ingredients</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Main About Banner Image -->
+    <div class="page-banner">
+        <img src="{{ url_for('static', filename='images/aboutus.png') }}" alt="About Sudarshan Foods">
+    </div>
+
+    <!-- Descriptive Text Card -->
+    <main class="about-content-card">
+        <h2>Traditional Flavor, Uncompromised Quality</h2>
+        <p>Welcome to <b>Sudarshan Food Production</b> based in Akola! We specialize in producing authentic, crispy, and delicious festive snacks like Chakli, Chorafalli, and Makka Poha.</p>
+        <p>Prepared in hygienic conditions with premium ingredients and traditional spices, our goal is to deliver the authentic taste of homemade Diwali faral directly to your doorstep.</p>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-grid">
+            <div class="footer-col">
+                <h3>SUDARSHAN</h3>
+                <p>Authentic snacks delivered directly to your doorstep in Akola.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <a href="{{ url_for('home') }}">Home</a>
+                <a href="{{ url_for('ingredients') }}">Ingredients</a>
+            </div>
+            <div class="footer-col">
+                <h4>Contact Us</h4>
+                <p>📞 7820872677 / 7517852270</p>
+                <p>✉️ sudarshanfoodproduction@gmail.com</p>
+            </div>
+            <div class="footer-col">
+                <h4>Location</h4>
+                <p>Behind Prajakta School, New Khetan Nagar, Kaulkhed, Akola</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; Sudarshan Food Production. All rights reserved.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

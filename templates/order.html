@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Place Order - Sudarshan Food Production</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/farar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/order.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/sudharshan icon.png') }}">
+</head>
+<body>
+
+    <header>
+        <nav class="nav-container">
+            <a href="{{ url_for('home') }}" class="brand-logo">
+                <img src="{{ url_for('static', filename='images/sudarshanlogo.png') }}" alt="Logo">
+                <span class="brand-title">SUDARSHAN FOODS</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('home') }}">Home</a></li>
+                <li><a href="{{ url_for('about') }}">About Us</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="order-wrapper">
+        <div class="order-card">
+            <h1 style="text-align: center; color: var(--primary-dark); margin-bottom: 1.5rem;">Place Your Order</h1>
+            
+            <form action="{{ url_for('place_order') }}" method="POST" class="order-form">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" placeholder="Enter your full name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="name@example.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Mobile Number</label>
+                    <input type="tel" id="phone" name="phone" placeholder="10-digit mobile number" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="item">Selected Food Product</label>
+                    <select id="item" name="item" required>
+                        <option value="Chakli" {% if item == 'Chakli' %}selected{% endif %}>Chakli</option>
+                        <option value="Chorafalli" {% if item == 'Chorafalli' %}selected{% endif %}>Chorafalli</option>
+                        <option value="Makka Poha" {% if item == 'Makka Poha' %}selected{% endif %}>Makka Poha</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="quantity">Quantity (in Kg)</label>
+                    <input type="text" id="quantity" name="quantity" placeholder="e.g. 1 kg or 500g" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="address">Delivery Address (Akola Area)</label>
+                    <textarea id="address" name="address" placeholder="Enter complete home/delivery address" required></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit">CONFIRM & SUBMIT ORDER</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-bottom">
+            <p>&copy; Sudarshan Food Production. All rights reserved.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

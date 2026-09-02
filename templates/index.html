@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudarshan Food Production - Fresh Diwali Faral</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/farar.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/sudharshan icon.png') }}">
+</head>
+<body>
+
+    <!-- Glassmorphism Header -->
+    <header>
+        <nav class="nav-container">
+            <a href="{{ url_for('home') }}" class="brand-logo">
+                <img src="{{ url_for('static', filename='images/sudarshanlogo.png') }}" alt="Logo">
+                <span class="brand-title">SUDARSHAN FOODS</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('home') }}">Home</a></li>
+                <li><a href="{{ url_for('about') }}">About Us</a></li>
+                <li><a href="{{ url_for('ingredients') }}">Ingredients</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Hero Banner Section -->
+    <section class="hero-section">
+        <h1 class="hero-title">AUTHENTIC DIWALI FARAL</h1>
+        <p class="hero-subtitle">Handcrafted with pure ingredients and traditional Akola recipes.</p>
+        
+        <div id="outerbox">
+            <div id="sliderbox">
+                <img src="{{ url_for('static', filename='images/chakli_1280x720.png') }}" alt="Chakli Banner">
+                <img src="{{ url_for('static', filename='images/chorafalli_1280x720.png') }}" alt="Chorafalli Banner">
+            </div>
+        </div>
+    </section>
+
+    <!-- Product Showcase -->
+    <main>
+        <h2 class="section-title">Our Best Selling Snacks</h2>
+        <div class="food_items">
+            
+            <!-- Chakli Card -->
+            <div class="food_items_pro">
+                <img src="{{ url_for('static', filename='images/chakli3d.png') }}" alt="Chakli">
+                <div class="food-title">CHAKLI</div>
+                <div class="btn">
+                    <a href="{{ url_for('order', item='Chakli') }}"><input type="button" value="ORDER NOW"></a>
+                </div>
+            </div>
+
+            <!-- Chorafalli Card -->
+            <div class="food_items_pro">
+                <img src="{{ url_for('static', filename='images/chorafalli3d.png') }}" alt="Chorafalli">
+                <div class="food-title">CHORAFALLI</div>
+                <div class="btn">
+                    <a href="{{ url_for('order', item='Chorafalli') }}"><input type="button" value="ORDER NOW"></a>
+                </div>
+            </div>
+
+            <!-- Makka Poha Card -->
+            <div class="food_items_pro">
+                <img src="{{ url_for('static', filename='images/makkapoha3d.png') }}" alt="Makka Poha">
+                <div class="food-title">MAKKA POHA</div>
+                <div class="btn">
+                    <a href="{{ url_for('order', item='Makka Poha') }}"><input type="button" value="ORDER NOW"></a>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Modern Footer -->
+    <footer>
+        <div class="footer-grid">
+            <div class="footer-col">
+                <h3>SUDARSHAN</h3>
+                <p>Authentic snacks delivered directly to your doorstep in Akola.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <a href="{{ url_for('about') }}">About Us</a>
+                <a href="{{ url_for('ingredients') }}">Ingredients</a>
+            </div>
+            <div class="footer-col">
+                <h4>Contact Us</h4>
+                <p>📞 7820872677 / 7517852270</p>
+                <p>✉️ sudarshanfoodproduction@gmail.com</p>
+            </div>
+            <div class="footer-col">
+                <h4>Location</h4>
+                <p>Behind Prajakta School, New Khetan Nagar, Kaulkhed, Akola</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; Sudarshan Food Production. All rights reserved.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
