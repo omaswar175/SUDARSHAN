@@ -10,6 +10,7 @@
 </head>
 <body>
 
+    <!-- Header Navigation -->
     <header>
         <nav class="nav-container">
             <a href="{{ url_for('home') }}" class="brand-logo">
@@ -19,59 +20,152 @@
             <ul class="nav-links">
                 <li><a href="{{ url_for('home') }}">Home</a></li>
                 <li><a href="{{ url_for('about') }}">About Us</a></li>
+                <li><a href="{{ url_for('ingredients') }}">Ingredients</a></li>
+                <li><a href="{{ url_for('user_portal') }}" style="color: #d97706; font-weight: bold;">My Portal</a></li>
             </ul>
         </nav>
     </header>
 
     <div class="order-wrapper">
         <div class="order-card">
-            <h1 style="text-align: center; color: var(--primary-dark); margin-bottom: 1.5rem;">Place Your Order</h1>
             
-            <form action="{{ url_for('place_order') }}" method="POST" class="order-form">
-                <div class="form-group">
-                    <label for="name">Full Name</label>
-                    <input type="text" id="name" name="name" placeholder="Enter your full name" required>
+            {% if success %}
+                <!-- Success Screen -->
+                <div style="text-align: center; padding: 20px;">
+                    <h2 style="color: #059669; margin-bottom: 10px;">🎉 Order Placed Successfully!</h2>
+                    <p style="font-size: 1.1rem; color: #374151;">
+                        Thank you, <strong>{{ customer_name }}</strong>! Your order for <strong>{{ items_summary }}</strong> has been received.
+                    </p>
+                    <p style="margin-top: 8px; color: #4b5563;">
+                        You can track your booking status anytime using your phone number <strong>{{ phone }}</strong> on our Customer Portal.
+                    </p>
+                    <br>
+                    <a href="{{ url_for('user_portal') }}" style="display: inline-block; padding: 10px 20px; background: #059669; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin-right: 10px;">
+                        View Booking Status
+                    </a>
+                    <a href="{{ url_for('home') }}" style="display: inline-block; padding: 10px 20px; background: var(--primary-color); color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                        Home Page
+                    </a>
                 </div>
+            {% else %}
+                <!-- Multi-Item Order Form -->
+                <h1 style="text-align: center; color: var(--primary-dark); margin-bottom: 1.5rem;">Select Products & Order Details</h1>
+                
+                <form action="{{ url_for('place_order') }}" method="POST" class="order-form">
+                    
+                    <div class="form-group">
+                        <label for="name">Full Name</label>
+                        <input type="text" id="name" name="name" placeholder="Enter your full name" required>
+                    </div>
 
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" placeholder="name@example.com" required>
-                </div>
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" placeholder="name@example.com" required>
+                    </div>
 
-                <div class="form-group">
-                    <label for="phone">Mobile Number</label>
-                    <input type="tel" id="phone" name="phone" placeholder="10-digit mobile number" required>
-                </div>
+                    <div class="form-group">
+                        <label for="phone">Mobile Number (Used for tracking orders)</label>
+                        <input type="tel" id="phone" name="phone" placeholder="10-digit mobile number" required>
+                    </div>
 
-                <div class="form-group">
-                    <label for="item">Selected Food Product</label>
-                    <select id="item" name="item" required>
-                        <option value="Chakli" {% if item == 'Chakli' %}selected{% endif %}>Chakli</option>
-                        <option value="Chorafalli" {% if item == 'Chorafalli' %}selected{% endif %}>Chorafalli</option>
-                        <option value="Makka Poha" {% if item == 'Makka Poha' %}selected{% endif %}>Makka Poha</option>
-                    </select>
-                </div>
+                    <!-- Multi-Product Selection Section -->
+                    <div class="form-group" style="background: #fffbeb; padding: 15px; border-radius: 10px; border: 1px solid #fef3c7;">
+                        <label style="font-weight: bold; color: #b45309; margin-bottom: 10px; display: block;">Select Food Products (Choose one or more):</label>
+                        
+                        <!-- Product 1: Chakli -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 10px;">
+                            <div>
+                                <input type="checkbox" id="chakli_check" name="chakli_check" value="yes" {% if selected_item == 'Chakli' or not selected_item %}checked{% endif %}>
+                                <label for="chakli_check" style="display: inline; font-weight: bold;">Chakli</label>
+                            </div>
+                            <input type="text" name="chakli_qty" placeholder="Qty (e.g. 1 kg)" value="1 kg" style="width: 130px; margin: 0;">
+                        </div>
 
-                <div class="form-group">
-                    <label for="quantity">Quantity (in Kg)</label>
-                    <input type="text" id="quantity" name="quantity" placeholder="e.g. 1 kg or 500g" required>
-                </div>
+                        <!-- Product 2: Chorafalli -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 10px;">
+                            <div>
+                                <input type="checkbox" id="chorafalli_check" name="chorafalli_check" value="yes" {% if selected_item == 'Chorafalli' %}checked{% endif %}>
+                                <label for="chorafalli_check" style="display: inline; font-weight: bold;">Chorafalli</label>
+                            </div>
+                            <input type="text" name="chorafalli_qty" placeholder="Qty (e.g. 500g)" style="width: 130px; margin: 0;">
+                        </div>
 
-                <div class="form-group">
-                    <label for="address">Delivery Address (Akola Area)</label>
-                    <textarea id="address" name="address" placeholder="Enter complete home/delivery address" required></textarea>
-                </div>
+                        <!-- Product 3: Makka Poha -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                            <div>
+                                <input type="checkbox" id="makka_check" name="makka_check" value="yes" {% if selected_item == 'Makka Poha' %}checked{% endif %}>
+                                <label for="makka_check" style="display: inline; font-weight: bold;">Makka Poha</label>
+                            </div>
+                            <input type="text" name="makka_qty" placeholder="Qty (e.g. 500g)" style="width: 130px; margin: 0;">
+                        </div>
+                    </div>
 
-                <button type="submit" class="btn-submit">CONFIRM & SUBMIT ORDER</button>
-            </form>
+                    <div class="form-group">
+                        <label for="address">Delivery Address (Akola Area)</label>
+                        <textarea id="address" name="address" placeholder="Enter complete home/delivery address" required></textarea>
+                    </div>
+
+                    <!-- Payment Mode Selection -->
+                    <div class="form-group">
+                        <label for="payment_mode">Select Payment Method</label>
+                        <select id="payment_mode" name="payment_mode" onchange="togglePaymentSection()" required>
+                            <option value="UPI">Pay Online via UPI / QR Code (PhonePe, GPay, Paytm)</option>
+                            <option value="Cash">Pay Offline (Cash on Delivery / Pay on Pickup)</option>
+                        </select>
+                    </div>
+
+                    <!-- Online UPI Box -->
+                    <div id="upi-section" style="background-color: #fef3c7; padding: 15px; border-radius: 12px; border: 2px dashed #d97706; text-align: center; margin: 10px 0;">
+                        <h3 style="color: #b45309; margin-bottom: 8px;">💳 Pay via UPI / PhonePe / GPay</h3>
+                        <p style="font-size: 0.95rem; color: #4b5563;">Scan QR code or pay to UPI ID:</p>
+                        <p style="font-size: 1.2rem; font-weight: bold; color: #059669; margin: 5px 0;">7820872677@ybl</p>
+                        <p style="font-size: 0.9rem; color: #4b5563;">GPay / PhonePe Number: <strong>7820872677</strong></p>
+                        <img src="{{ url_for('static', filename='images/upi_qr.png') }}" alt="UPI QR Code" style="max-width: 180px; width: 100%; border: 2px solid #fff; border-radius: 8px; margin-top: 10px;" onerror="this.style.display='none'">
+                        
+                        <div class="form-group" style="margin-top: 15px; text-align: left;">
+                            <label for="payment_ref">UPI Transaction ID / UTR Number (After Payment)</label>
+                            <input type="text" id="payment_ref" name="payment_ref" placeholder="Enter 12-digit UTR/Txn ID number" required>
+                        </div>
+                    </div>
+
+                    <!-- Offline Cash Box -->
+                    <div id="cash-section" style="display: none; background-color: #ecfdf5; padding: 15px; border-radius: 12px; border: 2px dashed #059669; text-align: center; margin: 10px 0;">
+                        <h3 style="color: #047857; margin-bottom: 8px;">💵 Cash on Delivery / Pay Offline</h3>
+                        <p style="color: #374151; font-size: 0.95rem;">You can pay in cash when your order is delivered to your address in Akola or picked up from our store.</p>
+                    </div>
+
+                    <button type="submit" class="btn-submit">SUBMIT ORDER & CONFIRM</button>
+                </form>
+            {% endif %}
+
         </div>
     </div>
 
+    <!-- Footer -->
     <footer>
         <div class="footer-bottom">
             <p>&copy; Sudarshan Food Production. All rights reserved.</p>
         </div>
     </footer>
+
+    <script>
+    function togglePaymentSection() {
+        var mode = document.getElementById("payment_mode").value;
+        var upiSection = document.getElementById("upi-section");
+        var cashSection = document.getElementById("cash-section");
+        var paymentRefInput = document.getElementById("payment_ref");
+
+        if (mode === "UPI") {
+            upiSection.style.display = "block";
+            cashSection.style.display = "none";
+            paymentRefInput.required = true;
+        } else {
+            upiSection.style.display = "none";
+            cashSection.style.display = "block";
+            paymentRefInput.required = false;
+        }
+    }
+    </script>
 
 </body>
 </html>
