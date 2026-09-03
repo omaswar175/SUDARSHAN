@@ -107,7 +107,7 @@ def place_order():
                            payment_ref=payment_ref,
                            payment_mode=payment_mode)
 
-# Customer Order Portal / Tracker Route
+# Customer Order Portal Route
 @app.route('/portal', methods=['GET', 'POST'])
 def user_portal():
     user_orders = None
@@ -122,7 +122,8 @@ def user_portal():
                 customer_info = {
                     'name': user_orders[0].customer_name,
                     'email': user_orders[0].email,
-                    'phone': user_orders[0].phone
+                    'phone': user_orders[0].phone,
+                    'address': user_orders[0].address
                 }
             
     return render_template('user_portal.html', orders=user_orders, phone=searched_phone, customer=customer_info)

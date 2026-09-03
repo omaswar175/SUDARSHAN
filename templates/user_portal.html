@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Track Order - Sudarshan Food Production</title>
+    <title>Customer Portal - Sudarshan Food Production</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/farar.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/order.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='images/sudharshan icon.png') }}">
@@ -22,43 +22,44 @@
                 <li><a href="{{ url_for('about') }}">About Us</a></li>
                 <li><a href="{{ url_for('ingredients') }}">Ingredients</a></li>
                 <li><a href="{{ url_for('order') }}">Order Now</a></li>
+                <li><a href="{{ url_for('user_portal') }}" style="color: #d97706; font-weight: bold;">My Portal</a></li>
             </ul>
         </nav>
     </header>
 
-    <div class="order-wrapper" style="max-width: 800px; margin: 30px auto; padding: 0 15px;">
+    <div class="order-wrapper" style="max-width: 850px; margin: 30px auto; padding: 0 15px;">
         <div class="order-card" style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
             
-            <h1 style="text-align: center; color: #b45309; margin-bottom: 0.5rem;">Customer Order Tracker</h1>
-            <p style="text-align: center; color: #6b7280; margin-bottom: 1.5rem;">Check your booked orders and delivery status anytime.</p>
+            <h1 style="text-align: center; color: #b45309; margin-bottom: 0.5rem;">Customer Portal</h1>
+            <p style="text-align: center; color: #6b7280; margin-bottom: 1.5rem;">Access your personal profile, order history, and booking statuses.</p>
 
-            <!-- Phone Search Box -->
+            <!-- Phone Verification Form -->
             <form action="{{ url_for('user_portal') }}" method="POST" style="margin-bottom: 2rem;">
                 <div class="form-group">
-                    <label for="phone" style="font-weight: bold;">Enter Your Registered Mobile Number:</label>
+                    <label for="phone" style="font-weight: bold;">Enter Registered Mobile Number:</label>
                     <div style="display: flex; gap: 10px; margin-top: 5px;">
                         <input type="tel" id="phone" name="phone" value="{{ phone if phone else '' }}" placeholder="10-digit mobile number" required style="flex: 1;">
-                        <button type="submit" class="btn-submit" style="width: auto; padding: 0 25px; white-space: nowrap;">VIEW MY ORDERS</button>
+                        <button type="submit" class="btn-submit" style="width: auto; padding: 0 25px; white-space: nowrap;">VIEW MY DETAILS</button>
                     </div>
                 </div>
             </form>
 
             {% if orders is not none %}
                 {% if orders|length > 0 %}
-                    <!-- Customer Profile Banner -->
-                    <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                        <div>
-                            <h3 style="color: #92400e; margin: 0;">Welcome, {{ customer.name }}</h3>
-                            <p style="color: #78350f; margin: 3px 0 0 0; font-size: 0.9rem;">📱 {{ customer.phone }} | ✉️ {{ customer.email }}</p>
+                    <!-- Customer Profile Card -->
+                    <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 20px; margin-bottom: 25px;">
+                        <h3 style="color: #92400e; margin-top: 0; margin-bottom: 10px; border-bottom: 1px dashed #fcd34d; padding-bottom: 8px;">👤 Customer Profile Details</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; color: #78350f; font-size: 0.95rem;">
+                            <p style="margin: 0;"><strong>Full Name:</strong> {{ customer.name }}</p>
+                            <p style="margin: 0;"><strong>Mobile:</strong> {{ customer.phone }}</p>
+                            <p style="margin: 0;"><strong>Email:</strong> {{ customer.email }}</p>
+                            <p style="margin: 0;"><strong>Saved Address:</strong> {{ customer.address }}</p>
                         </div>
-                        <span style="background: #d97706; color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85rem;">
-                            Total Orders: {{ orders|length }}
-                        </span>
                     </div>
 
-                    <h3 style="color: #374151; margin-bottom: 15px;">Your Booking History:</h3>
+                    <h3 style="color: #374151; margin-bottom: 15px;">Your Booking History ({{ orders|length }} Total):</h3>
 
-                    <!-- Order Cards -->
+                    <!-- Order History Cards -->
                     {% for o in orders %}
                         <div style="background: #ffffff; border: 2px solid #e5e7eb; border-radius: 10px; padding: 18px; margin-bottom: 18px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f3f4f6; padding-bottom: 10px; margin-bottom: 10px;">
@@ -80,7 +81,7 @@
                             </div>
 
                             <div style="display: grid; grid-template-columns: 1fr; gap: 8px; font-size: 0.95rem; color: #4b5563;">
-                                <p style="margin: 0;"><strong style="color: #1f2937;">Items Ordered:</strong> <span style="color: #b45309; font-weight: bold;">{{ o.item_name }}</span></p>
+                                <p style="margin: 0;"><strong style="color: #1f2937;">Items Booked:</strong> <span style="color: #b45309; font-weight: bold;">{{ o.item_name }}</span></p>
                                 <p style="margin: 0;"><strong style="color: #1f2937;">Delivery Address:</strong> {{ o.address }}</p>
                                 <p style="margin: 0;"><strong style="color: #1f2937;">Payment Reference:</strong> <span style="color: #059669; font-weight: bold;">{{ o.payment_ref }}</span></p>
                             </div>
@@ -89,8 +90,8 @@
 
                 {% else %}
                     <div style="text-align: center; padding: 25px; background: #fef2f2; border-radius: 10px; color: #991b1b; border: 1px solid #fecaca;">
-                        <h3>No Bookings Found</h3>
-                        <p style="margin-top: 5px; color: #7f1d1d;">No orders were found for mobile number <strong>{{ phone }}</strong>.</p>
+                        <h3>No Account or Bookings Found</h3>
+                        <p style="margin-top: 5px; color: #7f1d1d;">No customer records were found for mobile number <strong>{{ phone }}</strong>.</p>
                         <a href="{{ url_for('order') }}" style="display: inline-block; margin-top: 10px; padding: 8px 18px; background: #b45309; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Place a New Order</a>
                     </div>
                 {% endif %}
