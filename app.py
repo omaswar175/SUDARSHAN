@@ -76,7 +76,8 @@ def place_order():
     items_summary = ", ".join(selected_items)
 
     if payment_mode == 'UPI':
-        payment_ref = f"[UPI] {request.form.get('payment_ref')}"
+        payment_ref_val = request.form.get('payment_ref', '')
+        payment_ref = f"[UPI] {payment_ref_val}"
         order_status = "Pending Verification"
     else:
         payment_ref = "[Cash] Cash on Delivery"
@@ -96,9 +97,17 @@ def place_order():
     db.session.add(new_order)
     db.session.commit()
 
-    return render_template('order.html', success=True, customer_name=name, items_summary=items_summary, phone=phone, payment_mode=payment_mode)
+    return render_template('order.html', 
+                           success=True, 
+                           order_id=new_order.id, 
+                           customer_name=name, 
+                           items_summary=items_summary, 
+                           phone=phone,
+                           address=address,
+                           payment_ref=payment_ref,
+                           payment_mode=payment_mode)
 
-# Customer Portal & Booking Tracker Route
+# Customer Order Portal / Tracker Route
 @app.route('/portal', methods=['GET', 'POST'])
 def user_portal():
     user_orders = None
