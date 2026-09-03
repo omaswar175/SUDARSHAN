@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -15,21 +15,72 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+# Database model storing customer accounts and profiles
+class Customer(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(15), unique=True, nullable=False)
+    address = db.Column(db.Text, nullable=False)
+    orders = db.relationship('Order', backref='customer', lazy=True)
+
 # Database model storing customer orders & payment details
 class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
     customer_name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(15), nullable=False)
-    item_name = db.Column(db.Text, nullable=False)  # Stores selected products and quantities
+    item_name = db.Column(db.Text, nullable=False)
     quantity = db.Column(db.String(50), nullable=True)
     address = db.Column(db.Text, nullable=False)
-    payment_ref = db.Column(db.String(100), nullable=True)  # Stores UPI UTR or Cash Note
+    payment_ref = db.Column(db.String(100), nullable=True)
     status = db.Column(db.String(30), default="Pending Verification")
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    user_orders = None
+    customer = None
+    if 'user_phone' in session:
+        customer = Customer.query.filter_by(phone=session['user_phone']).first()
+        if customer:
+            user_orders = Order.query.filter_by(phone=customer.phone).order_by(Order.id.desc()).all()
+    return render_template('index.html', customer=customer, orders=user_orders)
+
+@app.route('/register-portal', methods=['POST'])
+def register_portal():
+    name = request.form.get('name')
+    email = request.form.get('email')
+    phone = request.form.get('phone', '').strip()
+    address = request.form.get('address')
+
+    if phone:
+        existing_customer = Customer.query.filter_by(phone=phone).first()
+        if not existing_customer:
+            new_customer = Customer(name=name, email=email, phone=phone, address=address)
+            db.session.add(new_customer)
+            db.session.commit()
+            session['user_phone'] = phone
+        else:
+            session['user_phone'] = existing_customer.phone
+
+    # Automatically takes customer to snack ordering form upon registration
+    return redirect(url_for('order'))
+
+@app.route('/login-portal', methods=['POST'])
+def login_portal():
+    phone = request.form.get('phone', '').strip()
+    customer = Customer.query.filter_by(phone=phone).first()
+    if customer:
+        session['user_phone'] = customer.phone
+        return redirect(url_for('order'))
+    
+    return redirect(url_for('home', require_login=True))
+
+@app.route('/logout-portal')
+def logout_portal():
+    session.pop('user_phone', None)
+    return redirect(url_for('home'))
 
 @app.route('/about')
 def about():
@@ -41,18 +92,26 @@ def ingredients():
 
 @app.route('/order')
 def order():
+    # Enforces customer registration before purchasing snacks
+    if 'user_phone' not in session:
+        return redirect(url_for('home', require_login=True) + '#customer-portal')
+    
+    customer = Customer.query.filter_by(phone=session['user_phone']).first()
+    if not customer:
+        session.pop('user_phone', None)
+        return redirect(url_for('home', require_login=True) + '#customer-portal')
+
     selected_item = request.args.get('item', '')
-    return render_template('order.html', selected_item=selected_item)
+    return render_template('order.html', selected_item=selected_item, customer=customer)
 
 @app.route('/place-order', methods=['POST'])
 def place_order():
-    name = request.form.get('name')
-    email = request.form.get('email')
-    phone = request.form.get('phone')
-    address = request.form.get('address')
-    payment_mode = request.form.get('payment_mode')  # 'UPI' or 'Cash'
+    if 'user_phone' not in session:
+        return redirect(url_for('home', require_login=True) + '#customer-portal')
+
+    customer = Customer.query.filter_by(phone=session['user_phone']).first()
+    payment_mode = request.form.get('payment_mode')
     
-    # Collect multiple selected items and their quantities
     selected_items = []
     
     chakli_qty = request.form.get('chakli_qty')
@@ -67,7 +126,6 @@ def place_order():
     if request.form.get('makka_check') and makka_qty:
         selected_items.append(f"Makka Poha ({makka_qty})")
 
-    # Fallback if no item checkbox was explicitly selected
     if not selected_items:
         fallback_item = request.form.get('fallback_item', 'Custom Food Order')
         fallback_qty = request.form.get('fallback_qty', '1 kg')
@@ -83,14 +141,14 @@ def place_order():
         payment_ref = "[Cash] Cash on Delivery"
         order_status = "COD / Cash Order"
 
-    # Save to database
     new_order = Order(
-        customer_name=name,
-        email=email,
-        phone=phone,
+        customer_id=customer.id,
+        customer_name=customer.name,
+        email=customer.email,
+        phone=customer.phone,
         item_name=items_summary,
         quantity="Multiple",
-        address=address,
+        address=customer.address,
         payment_ref=payment_ref,
         status=order_status
     )
@@ -100,35 +158,11 @@ def place_order():
     return render_template('order.html', 
                            success=True, 
                            order_id=new_order.id, 
-                           customer_name=name, 
+                           customer=customer, 
                            items_summary=items_summary, 
-                           phone=phone,
-                           address=address,
                            payment_ref=payment_ref,
                            payment_mode=payment_mode)
 
-# Customer Order Portal Route
-@app.route('/portal', methods=['GET', 'POST'])
-def user_portal():
-    user_orders = None
-    searched_phone = None
-    customer_info = None
-
-    if request.method == 'POST':
-        searched_phone = request.form.get('phone', '').strip()
-        if searched_phone:
-            user_orders = Order.query.filter_by(phone=searched_phone).order_by(Order.id.desc()).all()
-            if user_orders:
-                customer_info = {
-                    'name': user_orders[0].customer_name,
-                    'email': user_orders[0].email,
-                    'phone': user_orders[0].phone,
-                    'address': user_orders[0].address
-                }
-            
-    return render_template('user_portal.html', orders=user_orders, phone=searched_phone, customer=customer_info)
-
-# Secured Admin Dashboard
 @app.route('/admin')
 def admin_orders():
     secret_key = request.args.get('key')
