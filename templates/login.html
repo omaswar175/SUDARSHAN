@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Login - Sudarshan Food Production</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/farar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/order.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/sudharshan icon.png') }}">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <nav class="nav-container">
+            <a href="{{ url_for('home') }}" class="brand-logo">
+                <img src="{{ url_for('static', filename='images/sudarshanlogo.png') }}" alt="Logo">
+                <span class="brand-title">SUDARSHAN FOODS</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('home') }}">Home</a></li>
+                <li><a href="{{ url_for('about') }}">About Us</a></li>
+                <li><a href="{{ url_for('ingredients') }}">Ingredients</a></li>
+                <li>
+                    <a href="{{ url_for('login') }}" class="nav-auth-btn login-btn">
+                        Log In
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="order-wrapper" style="max-width: 480px; margin: 40px auto;">
+        <div class="order-card">
+            
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
+                  {% for message in messages %}
+                    <p style="margin: 0; font-size: 0.9rem;">{{ message }}</p>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button type="button" id="login-tab-btn" onclick="showTab('login')" style="flex: 1; padding: 10px; border: none; background: #d97706; color: white; border-radius: 8px; font-weight: bold; cursor: pointer;">Log In</button>
+                <button type="button" id="register-tab-btn" onclick="showTab('register')" style="flex: 1; padding: 10px; border: none; background: #e5e7eb; color: #374151; border-radius: 8px; font-weight: bold; cursor: pointer;">Register</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" action="{{ url_for('login') }}" method="POST" class="order-form">
+                <h2 style="text-align: center; color: var(--primary-dark); margin-bottom: 10px;">Login to Order</h2>
+                <input type="hidden" name="next_item" value="{{ next_item }}">
+
+                <div class="form-group">
+                    <label for="phone">Mobile Number</label>
+                    <input type="tel" name="phone" placeholder="Enter 10-digit mobile number" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" name="password" placeholder="Enter password" required>
+                </div>
+
+                <button type="submit" class="btn-submit">LOG IN & CONTINUE</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" action="{{ url_for('register') }}" method="POST" class="order-form" style="display: none;">
+                <h2 style="text-align: center; color: var(--primary-dark); margin-bottom: 10px;">Create Account</h2>
+                <input type="hidden" name="next_item" value="{{ next_item }}">
+
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" name="name" placeholder="Enter full name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Mobile Number</label>
+                    <input type="tel" name="phone" placeholder="10-digit mobile number" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" name="email" placeholder="name@example.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Create Password</label>
+                    <input type="password" name="password" placeholder="Create password" required>
+                </div>
+
+                <button type="submit" class="btn-submit">REGISTER & CONTINUE</button>
+            </form>
+
+        </div>
+    </div>
+
+    <script>
+    function showTab(tab) {
+        var loginForm = document.getElementById('login-form');
+        var regForm = document.getElementById('register-form');
+        var loginBtn = document.getElementById('login-tab-btn');
+        var regBtn = document.getElementById('register-tab-btn');
+
+        if (tab === 'login') {
+            loginForm.style.display = 'flex';
+            regForm.style.display = 'none';
+            loginBtn.style.background = '#d97706';
+            loginBtn.style.color = 'white';
+            regBtn.style.background = '#e5e7eb';
+            regBtn.style.color = '#374151';
+        } else {
+            loginForm.style.display = 'none';
+            regForm.style.display = 'flex';
+            regBtn.style.background = '#d97706';
+            regBtn.style.color = 'white';
+            loginBtn.style.background = '#e5e7eb';
+            loginBtn.style.color = '#374151';
+        }
+    }
+    </script>
+
+</body>
+</html>

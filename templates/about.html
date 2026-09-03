@@ -16,7 +16,7 @@
             width: 100%;
             height: auto;
             border-radius: 16px;
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             object-fit: cover;
         }
         .about-content-card {
@@ -25,14 +25,14 @@
             background: #ffffff;
             padding: 2.5rem;
             border-radius: 16px;
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         .about-content-card h2 {
-            color: var(--primary-dark);
+            color: #b45309;
             margin-bottom: 1rem;
         }
         .about-content-card p {
-            color: var(--text-dark);
+            color: #374151;
             font-size: 1.05rem;
             line-height: 1.8;
             margin-bottom: 1rem;
@@ -52,23 +52,35 @@
                 <li><a href="{{ url_for('home') }}">Home</a></li>
                 <li><a href="{{ url_for('about') }}">About Us</a></li>
                 <li><a href="{{ url_for('ingredients') }}">Ingredients</a></li>
+                
+                {% if session.get('user_id') %}
+                    <li><a href="{{ url_for('user_portal') }}" style="color: #fef08a; font-weight: bold;">My Portal</a></li>
+                    <li>
+                        <a href="{{ url_for('logout') }}" class="nav-auth-btn logout-btn">
+                            Logout ({{ session.get('user_name').split()[0] }})
+                        </a>
+                    </li>
+                {% else %}
+                    <li>
+                        <a href="{{ url_for('login') }}" class="nav-auth-btn login-btn">
+                            Log In
+                        </a>
+                    </li>
+                {% endif %}
             </ul>
         </nav>
     </header>
 
-    <!-- Main About Banner Image -->
     <div class="page-banner">
         <img src="{{ url_for('static', filename='images/aboutus.png') }}" alt="About Sudarshan Foods">
     </div>
 
-    <!-- Descriptive Text Card -->
     <main class="about-content-card">
         <h2>Traditional Flavor, Uncompromised Quality</h2>
         <p>Welcome to <b>Sudarshan Food Production</b> based in Akola! We specialize in producing authentic, crispy, and delicious festive snacks like Chakli, Chorafalli, and Makka Poha.</p>
         <p>Prepared in hygienic conditions with premium ingredients and traditional spices, our goal is to deliver the authentic taste of homemade Diwali faral directly to your doorstep.</p>
     </main>
 
-    <!-- Footer -->
     <footer>
         <div class="footer-grid">
             <div class="footer-col">
@@ -79,6 +91,7 @@
                 <h4>Quick Links</h4>
                 <a href="{{ url_for('home') }}">Home</a>
                 <a href="{{ url_for('ingredients') }}">Ingredients</a>
+                <a href="{{ url_for('user_portal') }}">Customer Portal</a>
             </div>
             <div class="footer-col">
                 <h4>Contact Us</h4>

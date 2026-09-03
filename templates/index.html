@@ -9,7 +9,7 @@
 </head>
 <body>
 
-    <!-- Glassmorphism Header -->
+    <!-- Header Navigation -->
     <header>
         <nav class="nav-container">
             <a href="{{ url_for('home') }}" class="brand-logo">
@@ -20,11 +20,26 @@
                 <li><a href="{{ url_for('home') }}">Home</a></li>
                 <li><a href="{{ url_for('about') }}">About Us</a></li>
                 <li><a href="{{ url_for('ingredients') }}">Ingredients</a></li>
+                
+                {% if session.get('user_id') %}
+                    <li><a href="{{ url_for('user_portal') }}" style="color: #fef08a; font-weight: bold;">My Portal</a></li>
+                    <li>
+                        <a href="{{ url_for('logout') }}" class="nav-auth-btn logout-btn">
+                            Logout ({{ session.get('user_name').split()[0] }})
+                        </a>
+                    </li>
+                {% else %}
+                    <li>
+                        <a href="{{ url_for('login') }}" class="nav-auth-btn login-btn">
+                            Log In
+                        </a>
+                    </li>
+                {% endif %}
             </ul>
         </nav>
     </header>
 
-    <!-- Hero Banner Section -->
+    <!-- Hero Section -->
     <section class="hero-section">
         <h1 class="hero-title">AUTHENTIC DIWALI FARAL</h1>
         <p class="hero-subtitle">Handcrafted with pure ingredients and traditional Akola recipes.</p>
@@ -42,7 +57,6 @@
         <h2 class="section-title">Our Best Selling Snacks</h2>
         <div class="food_items">
             
-            <!-- Chakli Card -->
             <div class="food_items_pro">
                 <img src="{{ url_for('static', filename='images/chakli3d.png') }}" alt="Chakli">
                 <div class="food-title">CHAKLI</div>
@@ -51,7 +65,6 @@
                 </div>
             </div>
 
-            <!-- Chorafalli Card -->
             <div class="food_items_pro">
                 <img src="{{ url_for('static', filename='images/chorafalli3d.png') }}" alt="Chorafalli">
                 <div class="food-title">CHORAFALLI</div>
@@ -60,7 +73,6 @@
                 </div>
             </div>
 
-            <!-- Makka Poha Card -->
             <div class="food_items_pro">
                 <img src="{{ url_for('static', filename='images/makkapoha3d.png') }}" alt="Makka Poha">
                 <div class="food-title">MAKKA POHA</div>
@@ -72,7 +84,7 @@
         </div>
     </main>
 
-    <!-- Modern Footer -->
+    <!-- Footer -->
     <footer>
         <div class="footer-grid">
             <div class="footer-col">
@@ -83,6 +95,7 @@
                 <h4>Quick Links</h4>
                 <a href="{{ url_for('about') }}">About Us</a>
                 <a href="{{ url_for('ingredients') }}">Ingredients</a>
+                <a href="{{ url_for('user_portal') }}">Customer Portal</a>
             </div>
             <div class="footer-col">
                 <h4>Contact Us</h4>

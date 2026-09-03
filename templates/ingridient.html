@@ -3,36 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ingredients - Sudarshan Food Production</title>
+    <title>INGREDIENTS - Sudarshan Food Production</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/farar.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='images/sudharshan icon.png') }}">
-    <style>
-        .ingredients-container {
-            max-width: 1100px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-        }
-        .ingredient-card {
-            background: #ffffff;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: var(--shadow-md);
-            transition: transform 0.3s ease;
-        }
-        .ingredient-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
-        }
-        .ingredient-card img {
-            width: 100%;
-            height: auto;
-            display: block;
-            object-fit: cover;
-        }
-    </style>
 </head>
 <body>
 
@@ -47,30 +20,32 @@
                 <li><a href="{{ url_for('home') }}">Home</a></li>
                 <li><a href="{{ url_for('about') }}">About Us</a></li>
                 <li><a href="{{ url_for('ingredients') }}">Ingredients</a></li>
+                
+                {% if session.get('user_id') %}
+                    <li><a href="{{ url_for('user_portal') }}" style="color: #fef08a; font-weight: bold;">My Portal</a></li>
+                    <li>
+                        <a href="{{ url_for('logout') }}" class="nav-auth-btn logout-btn">
+                            Logout ({{ session.get('user_name').split()[0] }})
+                        </a>
+                    </li>
+                {% else %}
+                    <li>
+                        <a href="{{ url_for('login') }}" class="nav-auth-btn login-btn">
+                            Log In
+                        </a>
+                    </li>
+                {% endif %}
             </ul>
         </nav>
     </header>
 
-    <h1 style="text-align: center; margin-top: 2rem; color: var(--primary-dark);">OUR INGREDIENTS & QUALITY</h1>
-
-    <!-- Ingredients Showcase Cards -->
-    <main class="ingredients-container">
-        
-        <div class="ingredient-card">
-            <img src="{{ url_for('static', filename='images/chakli.png') }}" alt="Chakli Ingredients">
-        </div>
-
-        <div class="ingredient-card">
-            <img src="{{ url_for('static', filename='images/chorafalli.png') }}" alt="Chorafalli Ingredients">
-        </div>
-
-        <div class="ingredient-card">
-            <img src="{{ url_for('static', filename='images/makka.png') }}" alt="Makka Poha Ingredients">
-        </div>
-
+    <main style="max-width: 1000px; margin: 20px auto; padding: 0 15px; text-align: center;">
+        <h1 style="color: #b45309; margin-bottom: 20px;">OUR INGREDIENTS</h1>
+        <img src="{{ url_for('static', filename='images/makka.png') }}" alt="Makka Poha Ingredients" style="width: 100%; height: auto; margin-bottom: 20px;">
+        <img src="{{ url_for('static', filename='images/chakli.png') }}" alt="Chakli Ingredients" style="width: 100%; height: auto; margin-bottom: 20px;">
+        <img src="{{ url_for('static', filename='images/chorafalli.png') }}" alt="Chorafalli Ingredients" style="width: 100%; height: auto; margin-bottom: 20px;">
     </main>
 
-    <!-- Footer -->
     <footer>
         <div class="footer-grid">
             <div class="footer-col">
@@ -79,8 +54,9 @@
             </div>
             <div class="footer-col">
                 <h4>Quick Links</h4>
-                <a href="{{ url_for('home') }}">Home</a>
                 <a href="{{ url_for('about') }}">About Us</a>
+                <a href="{{ url_for('ingredients') }}">Ingredients</a>
+                <a href="{{ url_for('user_portal') }}">Customer Portal</a>
             </div>
             <div class="footer-col">
                 <h4>Contact Us</h4>

@@ -21,8 +21,21 @@
                 <li><a href="{{ url_for('home') }}">Home</a></li>
                 <li><a href="{{ url_for('about') }}">About Us</a></li>
                 <li><a href="{{ url_for('ingredients') }}">Ingredients</a></li>
-                <li><a href="{{ url_for('order') }}">Order Now</a></li>
-                <li><a href="{{ url_for('user_portal') }}" style="color: #d97706; font-weight: bold;">My Portal</a></li>
+                
+                {% if session.get('user_id') %}
+                    <li><a href="{{ url_for('user_portal') }}" style="color: #fef08a; font-weight: bold;">My Portal</a></li>
+                    <li>
+                        <a href="{{ url_for('logout') }}" class="nav-auth-btn logout-btn">
+                            Logout ({{ session.get('user_name').split()[0] }})
+                        </a>
+                    </li>
+                {% else %}
+                    <li>
+                        <a href="{{ url_for('login') }}" class="nav-auth-btn login-btn">
+                            Log In
+                        </a>
+                    </li>
+                {% endif %}
             </ul>
         </nav>
     </header>
@@ -30,13 +43,12 @@
     <div class="order-wrapper" style="max-width: 800px; margin: 30px auto; padding: 0 15px;">
         <div class="order-card" style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
             
-            <h1 style="text-align: center; color: #b45309; margin-bottom: 0.5rem;">Customer Order Portal</h1>
+            <h1 style="text-align: center; color: var(--primary-dark, #b45309); margin-bottom: 0.5rem;">Customer Order Portal</h1>
             <p style="text-align: center; color: #6b7280; margin-bottom: 1.5rem;">Access your booking status, order history, and delivery updates.</p>
 
-            <!-- Phone Search Box -->
             <form action="{{ url_for('user_portal') }}" method="POST" style="margin-bottom: 2rem;">
                 <div class="form-group">
-                    <label for="phone" style="font-weight: bold;">Enter Registered Mobile Number:</label>
+                    <label for="phone" style="font-weight: bold;">Registered Mobile Number:</label>
                     <div style="display: flex; gap: 10px; margin-top: 5px;">
                         <input type="tel" id="phone" name="phone" value="{{ phone if phone else '' }}" placeholder="10-digit mobile number (e.g. 7820872677)" required style="flex: 1;">
                         <button type="submit" class="btn-submit" style="width: auto; padding: 0 25px; white-space: nowrap;">VIEW MY ORDERS</button>
@@ -46,7 +58,7 @@
 
             {% if orders is not none %}
                 {% if orders|length > 0 %}
-                    <!-- User Profile Header -->
+                    {% if customer %}
                     <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                         <div>
                             <h3 style="color: #92400e; margin: 0;">Welcome, {{ customer.name }}</h3>
@@ -56,14 +68,13 @@
                             Total Orders: {{ orders|length }}
                         </span>
                     </div>
+                    {% endif %}
 
                     <h3 style="color: #374151; margin-bottom: 15px;">Your Booking Status:</h3>
 
-                    <!-- Order History Cards -->
                     {% for o in orders %}
                         <div style="background: #ffffff; border: 2px solid #e5e7eb; border-radius: 10px; padding: 18px; margin-bottom: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
                             
-                            <!-- Card Header: ID & Status Badge -->
                             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f3f4f6; padding-bottom: 10px; margin-bottom: 10px;">
                                 <span style="font-weight: bold; font-size: 1.1rem; color: #1f2937;">Order #{{ o.id }}</span>
                                 
@@ -82,7 +93,6 @@
                                 {% endif %}
                             </div>
 
-                            <!-- Card Body -->
                             <div style="display: grid; grid-template-columns: 1fr; gap: 8px; font-size: 0.95rem; color: #4b5563;">
                                 <p style="margin: 0;"><strong style="color: #1f2937;">Items Booked:</strong> <span style="color: #b45309; font-weight: bold;">{{ o.item_name }}</span></p>
                                 <p style="margin: 0;"><strong style="color: #1f2937;">Delivery Address:</strong> {{ o.address }}</p>
@@ -103,7 +113,6 @@
         </div>
     </div>
 
-    <!-- Footer -->
     <footer>
         <div class="footer-bottom">
             <p>&copy; Sudarshan Food Production. All rights reserved.</p>
