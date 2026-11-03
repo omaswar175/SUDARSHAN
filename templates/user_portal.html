@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Portal - Sudarshan Food Production</title>
+    <title>My Orders Portal - Sudarshan Food Production</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/farar.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/order.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='images/sudharshan icon.png') }}">
 </head>
 <body>
 
-    <!-- Header Navigation -->
     <header>
         <nav class="nav-container">
             <a href="{{ url_for('home') }}" class="brand-logo">
@@ -21,92 +20,71 @@
                 <li><a href="{{ url_for('home') }}">Home</a></li>
                 <li><a href="{{ url_for('about') }}">About Us</a></li>
                 <li><a href="{{ url_for('ingredients') }}">Ingredients</a></li>
-                
-                {% if session.get('user_id') %}
-                    <li><a href="{{ url_for('user_portal') }}" style="color: #fef08a; font-weight: bold;">My Portal</a></li>
-                    <li>
-                        <a href="{{ url_for('logout') }}" class="nav-auth-btn logout-btn">
-                            Logout ({{ session.get('user_name').split()[0] }})
-                        </a>
-                    </li>
-                {% else %}
-                    <li>
-                        <a href="{{ url_for('login') }}" class="nav-auth-btn login-btn">
-                            Log In
-                        </a>
-                    </li>
-                {% endif %}
+                <li><a href="{{ url_for('order') }}">Order Now</a></li>
+                <li><a href="{{ url_for('user_portal') }}" style="color: #fef08a; font-weight: bold;">My Orders</a></li>
+                <li><a href="{{ url_for('profile') }}">My Profile</a></li>
+                <li><a href="{{ url_for('logout') }}" class="nav-auth-btn logout-btn">Logout ({{ session.get('user_name').split()[0] }})</a></li>
             </ul>
         </nav>
     </header>
 
-    <div class="order-wrapper" style="max-width: 800px; margin: 30px auto; padding: 0 15px;">
-        <div class="order-card" style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
-            
-            <h1 style="text-align: center; color: var(--primary-dark, #b45309); margin-bottom: 0.5rem;">Customer Order Portal</h1>
-            <p style="text-align: center; color: #6b7280; margin-bottom: 1.5rem;">Access your booking status, order history, and delivery updates.</p>
+    <div class="order-wrapper">
+        <div class="order-card">
+            <h1 style="text-align: center;">My Orders Portal</h1>
+            <p style="text-align: center; color: #6b7280; margin-bottom: 20px;">View order history and real-time delivery status.</p>
 
-            <form action="{{ url_for('user_portal') }}" method="POST" style="margin-bottom: 2rem;">
-                <div class="form-group">
-                    <label for="phone" style="font-weight: bold;">Registered Mobile Number:</label>
-                    <div style="display: flex; gap: 10px; margin-top: 5px;">
-                        <input type="tel" id="phone" name="phone" value="{{ phone if phone else '' }}" placeholder="10-digit mobile number (e.g. 7820872677)" required style="flex: 1;">
-                        <button type="submit" class="btn-submit" style="width: auto; padding: 0 25px; white-space: nowrap;">VIEW MY ORDERS</button>
-                    </div>
+            <form action="{{ url_for('user_portal') }}" method="POST" style="margin-bottom: 25px;">
+                <label for="phone" style="font-weight: bold; color: #374151;">Registered Mobile Number:</label>
+                <div style="display: flex; gap: 10px; margin-top: 5px;">
+                    <input type="tel" id="phone" name="phone" value="{{ phone if phone else '' }}" placeholder="Enter 10-digit mobile number" required style="flex: 1; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                    <button type="submit" style="padding: 10px 20px; background: #059669; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">VIEW MY ORDERS</button>
                 </div>
             </form>
 
             {% if orders is not none %}
-                {% if orders|length > 0 %}
-                    {% if customer %}
-                    <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                        <div>
-                            <h3 style="color: #92400e; margin: 0;">Welcome, {{ customer.name }}</h3>
-                            <p style="color: #78350f; margin: 3px 0 0 0; font-size: 0.9rem;">📱 {{ customer.phone }} | ✉️ {{ customer.email }}</p>
-                        </div>
-                        <span style="background: #d97706; color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85rem;">
-                            Total Orders: {{ orders|length }}
-                        </span>
+                <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h3 style="margin: 0; color: #b45309;">Welcome, {{ session.get('user_name') }}</h3>
+                        <p style="margin: 5px 0 0 0; color: #78350f; font-size: 0.9rem;">📱 {{ phone }}</p>
                     </div>
-                    {% endif %}
+                    <span style="background: #d97706; color: white; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem;">Total Orders: {{ orders|length }}</span>
+                </div>
 
-                    <h3 style="color: #374151; margin-bottom: 15px;">Your Booking Status:</h3>
+                <h3 style="color: #374151; margin-bottom: 15px;">Your Booking Status:</h3>
 
-                    {% for o in orders %}
-                        <div style="background: #ffffff; border: 2px solid #e5e7eb; border-radius: 10px; padding: 18px; margin-bottom: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f3f4f6; padding-bottom: 10px; margin-bottom: 10px;">
-                                <span style="font-weight: bold; font-size: 1.1rem; color: #1f2937;">Order #{{ o.id }}</span>
+                {% if orders %}
+                    {% for order in orders %}
+                        <div style="border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px; margin-bottom: 15px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <h3 style="margin: 0; color: #1f2937;">Order #{{ order.id }}</h3>
                                 
-                                {% if o.status == 'Pending Verification' %}
-                                    <span style="background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 0.85rem;">
-                                        ⏳ {{ o.status }}
-                                    </span>
-                                {% elif o.status == 'COD / Cash Order' %}
-                                    <span style="background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 0.85rem;">
-                                        💵 {{ o.status }}
-                                    </span>
+                                {% if 'Confirmed' in order.status %}
+                                    <span style="background: #d1fae5; color: #065f46; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem;">✅ {{ order.status }}</span>
+                                {% elif 'Out for Delivery' in order.status or 'Dispatched' in order.status %}
+                                    <span style="background: #dbeafe; color: #1e40af; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem;">🚚 {{ order.status }}</span>
+                                {% elif 'Cancelled' in order.status %}
+                                    <span style="background: #fee2e2; color: #991b1b; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem;">❌ {{ order.status }}</span>
                                 {% else %}
-                                    <span style="background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 0.85rem;">
-                                        ✅ {{ o.status }}
-                                    </span>
+                                    <span style="background: #fef3c7; color: #92400e; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem;">⏳ {{ order.status }}</span>
                                 {% endif %}
                             </div>
 
-                            <div style="display: grid; grid-template-columns: 1fr; gap: 8px; font-size: 0.95rem; color: #4b5563;">
-                                <p style="margin: 0;"><strong style="color: #1f2937;">Items Booked:</strong> <span style="color: #b45309; font-weight: bold;">{{ o.item_name }}</span></p>
-                                <p style="margin: 0;"><strong style="color: #1f2937;">Delivery Address:</strong> {{ o.address }}</p>
-                                <p style="margin: 0;"><strong style="color: #1f2937;">Payment Reference:</strong> <span style="color: #059669; font-weight: bold;">{{ o.payment_ref }}</span></p>
-                            </div>
+                            <p style="margin: 6px 0; color: #4b5563;"><strong>Items Booked:</strong> <span style="color: #b45309; font-weight: bold;">{{ order.item_name }}</span></p>
+                            <p style="margin: 6px 0; color: #4b5563;"><strong>Delivery Address:</strong> {{ order.address }}</p>
+                            <p style="margin: 6px 0; color: #4b5563;"><strong>Payment Reference:</strong> <span style="color: #059669; font-weight: bold;">{{ order.payment_ref }}</span></p>
+
+                            <!-- Customer Delivery OTP Display -->
+                            {% if order.delivery_otp and 'Confirmed' not in order.status and 'Cancelled' not in order.status %}
+                                <div style="margin-top: 12px; background: #f0fdf4; border: 1px dashed #16a34a; padding: 10px 15px; border-radius: 8px; display: inline-block;">
+                                    <span style="color: #166534; font-weight: bold; font-size: 0.9rem;">🔑 Delivery Verification OTP: </span>
+                                    <strong style="color: #15803d; font-size: 1.1rem; letter-spacing: 2px;">{{ order.delivery_otp }}</strong>
+                                    <span style="color: #15803d; font-size: 0.8rem; display: block;">Share this code with the delivery executive upon receiving your order.</span>
+                                </div>
+                            {% endif %}
                         </div>
                     {% endfor %}
-
                 {% else %}
-                    <div style="text-align: center; padding: 25px; background: #fef2f2; border-radius: 10px; color: #991b1b; border: 1px solid #fecaca;">
-                        <h3>No Bookings Found</h3>
-                        <p style="margin-top: 5px; color: #7f1d1d;">No orders were found for mobile number <strong>{{ phone }}</strong>.</p>
-                        <a href="{{ url_for('order') }}" style="display: inline-block; margin-top: 10px; padding: 8px 18px; background: #b45309; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Place a New Order</a>
-                    </div>
+                    <p style="text-align: center; color: #6b7280; padding: 20px;">No order history found for this phone number.</p>
                 {% endif %}
             {% endif %}
 

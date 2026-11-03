@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile - Sudarshan Food Production</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/farar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/order.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/sudharshan icon.png') }}">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <nav class="nav-container">
+            <a href="{{ url_for('home') }}" class="brand-logo">
+                <img src="{{ url_for('static', filename='images/sudarshanlogo.png') }}" alt="Logo">
+                <span class="brand-title">SUDARSHAN FOODS</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('home') }}">Home</a></li>
+                <li><a href="{{ url_for('about') }}">About Us</a></li>
+                <li><a href="{{ url_for('ingredients') }}">Ingredients</a></li>
+                <li><a href="{{ url_for('order') }}">Order Now</a></li>
+                <li><a href="{{ url_for('user_portal') }}">My Orders</a></li>
+                <li><a href="{{ url_for('profile') }}" style="color: #fef08a; font-weight: bold;">My Profile</a></li>
+                <li>
+                    <a href="{{ url_for('logout') }}" class="nav-auth-btn logout-btn">
+                        Logout ({{ session.get('user_name').split()[0] }})
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="order-wrapper" style="max-width: 550px; margin: 40px auto;">
+        <div class="order-card">
+            <h1 style="text-align: center; color: var(--primary-dark); margin-bottom: 10px;">My Profile</h1>
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 20px;">Manage your personal account details below.</p>
+
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                <div style="background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
+                  {% for message in messages %}
+                    <p style="margin: 0; font-size: 0.9rem; font-weight: bold;">{{ message }}</p>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+
+            <form action="{{ url_for('update_profile') }}" method="POST" class="order-form">
+                <div class="form-group">
+                    <label for="phone">Registered Mobile Number (Cannot be changed)</label>
+                    <input type="tel" id="phone" value="{{ user.phone }}" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
+                </div>
+
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" value="{{ user.name }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" value="{{ user.email }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Change Password (Leave blank to keep current)</label>
+                    <input type="password" id="password" name="password" placeholder="Enter new password">
+                </div>
+
+                <button type="submit" class="btn-submit">UPDATE PROFILE</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-bottom">
+            <p>&copy; Sudarshan Food Production. All rights reserved.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

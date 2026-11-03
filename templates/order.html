@@ -10,7 +10,6 @@
 </head>
 <body>
 
-    <!-- Header Navigation -->
     <header>
         <nav class="nav-container">
             <a href="{{ url_for('home') }}" class="brand-logo">
@@ -31,9 +30,7 @@
                     </li>
                 {% else %}
                     <li>
-                        <a href="{{ url_for('login') }}" class="nav-auth-btn login-btn">
-                            Log In
-                        </a>
+                        <a href="{{ url_for('login') }}" class="nav-auth-btn login-btn">Log In</a>
                     </li>
                 {% endif %}
             </ul>
@@ -49,6 +46,14 @@
                     <p style="font-size: 1.1rem; color: #374151;">
                         Thank you, <strong>{{ customer_name }}</strong>! Your order for <strong>{{ items_summary }}</strong> has been received.
                     </p>
+                    
+                    <!-- Display Delivery OTP to Customer -->
+                    <div style="background: #f0fdf4; border: 2px dashed #16a34a; padding: 15px; border-radius: 10px; margin: 15px auto; max-width: 320px;">
+                        <p style="margin: 0; color: #166534; font-weight: bold;">🔑 Your Delivery Verification OTP:</p>
+                        <p style="font-size: 2rem; font-weight: bold; color: #15803d; letter-spacing: 4px; margin: 5px 0;">{{ delivery_otp }}</p>
+                        <p style="font-size: 0.85rem; color: #15803d; margin: 0;">Provide this code to the delivery executive when receiving your food.</p>
+                    </div>
+
                     <p style="margin-top: 8px; color: #4b5563;">
                         You can track your booking status anytime using your phone number <strong>{{ phone }}</strong> on our Customer Portal.
                     </p>
@@ -61,8 +66,10 @@
                     </a>
                 </div>
             {% else %}
-                <h1>Complete Your Order</h1>
-                <p class="subtitle" style="text-align: center; color: var(--text-muted); margin-bottom: 1rem;">Welcome, <strong>{{ session.get('user_name') }}</strong>! Select your items and choose your payment method below.</p>
+                <h1 style="text-align: center;">Complete Your Order</h1>
+                <p class="subtitle" style="text-align: center; color: var(--text-muted); margin-bottom: 1rem;">
+                    Welcome, <strong>{{ session.get('user_name') }}</strong>! Select your items and choose your payment method below.
+                </p>
                 
                 <form action="{{ url_for('place_order') }}" method="POST" class="order-form">
                     
@@ -122,12 +129,18 @@
                         </select>
                     </div>
 
+                    <!-- Online UPI Payment Box -->
                     <div id="upi-section">
                         <h3 style="color: #b45309; margin-bottom: 8px;">💳 Pay via UPI / PhonePe / GPay</h3>
                         <p style="font-size: 0.95rem; color: #4b5563;">Scan QR code or pay to UPI ID:</p>
+                        
+                        <div style="margin: 15px auto; display: inline-block; padding: 10px; background: white; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.06);">
+                            <img src="{{ url_for('static', filename='images/phonepe-qr.png.jpeg') }}" alt="PhonePe QR Code" style="width: 220px; height: auto; display: block; border-radius: 8px;">
+                            <p style="font-weight: bold; color: #1f2937; margin-top: 8px; margin-bottom: 0; font-size: 0.9rem;">Om Raju Aswar</p>
+                        </div>
+
                         <p style="font-size: 1.2rem; font-weight: bold; color: #059669; margin: 5px 0;">7820872677@ybl</p>
                         <p style="font-size: 0.9rem; color: #4b5563;">GPay / PhonePe Number: <strong>7820872677</strong></p>
-                        <img src="{{ url_for('static', filename='images/upi_qr.png') }}" alt="UPI QR Code" style="max-width: 180px; width: 100%; border: 2px solid #fff; border-radius: 8px; margin-top: 10px;" onerror="this.style.display='none'">
                         
                         <div class="form-group" style="margin-top: 15px; text-align: left;">
                             <label for="payment_ref">UPI Transaction ID / UTR Number (After Payment)</label>
@@ -140,7 +153,7 @@
                         <p style="color: #374151; font-size: 0.95rem;">You can pay in cash when your order is delivered to your address in Akola or picked up from our store.</p>
                     </div>
 
-                    <button type="submit" class="btn-submit">CONFIRM ORDER & PAY</button>
+                    <button type="submit" class="btn-submit" style="margin-top: 20px;">CONFIRM & PLACE ORDER</button>
                 </form>
             {% endif %}
 
