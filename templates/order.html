@@ -197,12 +197,13 @@
                     <div class="form-group">
                         <label for="payment_mode">Select Payment Method</label>
                         <select id="payment_mode" name="payment_mode" onchange="togglePaymentSection()" required>
-                            <option value="UPI">Pay Online via UPI / QR Code (PhonePe, GPay, Paytm)</option>
+                            <option value="UPI">Pay via Direct UPI / QR Code (PhonePe, GPay, Paytm)</option>
+                            <option value="Stripe">Pay Online via Card / Apple Pay / Google Pay (Stripe)</option>
                             <option value="Cash">Pay Offline (Cash on Delivery / Pay on Pickup)</option>
                         </select>
                     </div>
 
-                    <!-- Online UPI Payment Box with Direct App Link -->
+                    <!-- Online UPI Payment Box -->
                     <div id="upi-section">
                         <h3>💳 Pay via UPI / PhonePe / GPay</h3>
                         <p style="font-size: 0.95rem; color: #5C5263;">Scan QR or tap the button below to pay <strong id="upi-pay-amount" style="color: #D97706;">₹0</strong>:</p>
@@ -224,6 +225,15 @@
                         </div>
                     </div>
 
+                    <!-- Stripe Payment Info Box -->
+                    <div id="stripe-section" style="display: none; background-color: #EEF1F5; padding: 1.25rem; border-radius: 12px; border: 2px dashed #2E1437; text-align: center; margin-top: 0.5rem;">
+                        <h3 style="color: #2E1437;">🔒 Secure Stripe Checkout</h3>
+                        <p style="color: #5C5263; font-size: 0.95rem; margin-top: 6px;">
+                            You will be redirected to Stripe's encrypted payment gateway to pay <strong id="stripe-pay-amount" style="color: #D97706;">₹0</strong> via Credit/Debit Card.
+                        </p>
+                    </div>
+
+                    <!-- Cash on Delivery Box -->
                     <div id="cash-section" style="display: none;">
                         <h3>💵 Cash on Delivery / Pay Offline</h3>
                         <p style="color: #1E1324; font-size: 0.95rem;">Pay <strong id="cash-pay-amount" style="color: #D97706;">₹0</strong> in cash when your order is delivered.</p>
@@ -231,6 +241,16 @@
 
                     <button type="submit" class="btn-submit" id="submit-order-btn" style="margin-top: 15px;">CONFIRM & PLACE ORDER</button>
                 </form>
+
+                <!-- SideShift.ai International Gifting Banner -->
+                <div style="background: #2E1437; border: 1.5px solid #F59E0B; border-radius: 10px; padding: 12px; margin-top: 20px; text-align: center;">
+                    <p style="color: #F59E0B; font-weight: 700; margin: 0 0 4px 0;">🌐 Sending Diwali Faral from Abroad?</p>
+                    <p style="color: #EEF1F5; font-size: 0.85rem; margin: 0 0 8px 0;">Swap crypto seamlessly via SideShift.ai and send authentic Akola snacks to family.</p>
+                    <a href="https://sideshift.ai/a/{{ sideshift_affiliate_id }}" target="_blank" rel="noopener"
+                       style="display: inline-block; background: #F59E0B; color: #2E1437; padding: 6px 14px; border-radius: 6px; font-weight: 800; text-decoration: none; font-size: 0.85rem;">
+                        Launch SideShift Exchange →
+                    </a>
+                </div>
             {% endif %}
 
         </div>
@@ -264,6 +284,7 @@
     let activeCoupon = null;
 
     window.onload = function() {
+        togglePaymentSection();
         const preselected = "{{ selected_item }}".toLowerCase();
         const reorderStr = "{{ reorder_items }}".toLowerCase();
 
@@ -368,6 +389,7 @@
             document.getElementById("float-price-text").innerText = `₹${finalTotal}`;
 
             document.getElementById("upi-pay-amount").innerText = `₹${finalTotal}`;
+            document.getElementById("stripe-pay-amount").innerText = `₹${finalTotal}`;
             document.getElementById("cash-pay-amount").innerText = `₹${finalTotal}`;
             document.getElementById("upi-deep-link").href =
                 `upi://pay?pa=7820872677@ybl&pn=Sudarshan%20Foods&am=${finalTotal}&cu=INR`;
@@ -379,6 +401,7 @@
             cartBar.style.display = "none";
             floatBar.style.display = "none";
             document.getElementById("upi-pay-amount").innerText = "₹0";
+            document.getElementById("stripe-pay-amount").innerText = "₹0";
             document.getElementById("cash-pay-amount").innerText = "₹0";
             submitBtn.innerText = "CONFIRM & PLACE ORDER";
             summaryInput.value = "";
@@ -396,9 +419,15 @@
 
     function togglePaymentSection() {
         var mode = document.getElementById("payment_mode").value;
-        document.getElementById("upi-section").style.display = mode === "UPI" ? "block" : "none";
-        document.getElementById("cash-section").style.display = mode === "UPI" ? "none" : "block";
-        document.getElementById("payment_ref").required = mode === "UPI";
+        var upiSec = document.getElementById("upi-section");
+        var stripeSec = document.getElementById("stripe-section");
+        var cashSec = document.getElementById("cash-section");
+        var refInput = document.getElementById("payment_ref");
+
+        upiSec.style.display = (mode === "UPI") ? "block" : "none";
+        stripeSec.style.display = (mode === "Stripe") ? "block" : "none";
+        cashSec.style.display = (mode === "Cash") ? "block" : "none";
+        refInput.required = (mode === "UPI");
     }
     </script>
 

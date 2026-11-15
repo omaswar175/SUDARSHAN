@@ -9,24 +9,34 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 from twilio.rest import Client
+import stripe
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'sudarshan-secret-key-123'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'sudarshan-secret-key-123')
 
+# Supabase PostgreSQL / Local SQLite URI handling
 database_url = os.environ.get('DATABASE_URL', 'sqlite:///sudarshan_orders.db')
 if database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+}
 
 db = SQLAlchemy(app)
 
 # ==============================================================================
-# NOTIFICATION & ADMIN CONFIGURATION
+# STRIPE, SIDESHIFT, NOTIFICATION & ADMIN CONFIGURATION
 # ==============================================================================
-ADMIN_EMAIL = "omaswar175@gmail.com"
-GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "tpdb awfp gcyp uaaz")
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "sk_test_your_stripe_secret_key")
+STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "pk_test_your_stripe_public_key")
+SIDESHIFT_AFFILIATE_ID = os.environ.get("SIDESHIFT_AFFILIATE_ID", "sudarshan")
+
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "omaswar175@gmail.com")
+GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "YOUR_16_CHAR_GMAIL_APP_PASSWORD")
 ADMIN_SECRET_CODE = os.environ.get("ADMIN_SECRET_CODE", "SudarshanAkola2026")
 
 ADMIN_PHONE_NUMBER = "+918830446585"
@@ -34,6 +44,11 @@ TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "YOUR_TWILIO_ACCOUNT_S
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "YOUR_TWILIO_AUTH_TOKEN")
 TWILIO_PHONE_NUMBER = os.environ.get("TWILIO_PHONE_NUMBER", "+1234567890")
 TWILIO_WHATSAPP_NUMBER = os.environ.get("TWILIO_WHATSAPP_NUMBER", "whatsapp:+14155238886")
+
+
+@app.context_processor
+def inject_globals():
+    return dict(sideshift_affiliate_id=SIDESHIFT_AFFILIATE_ID)
 
 
 def send_email_notification(customer_name, customer_email, phone, items_summary, address, payment_ref, delivery_otp):
@@ -113,7 +128,6 @@ Sudarshan Food Production
         server.login(ADMIN_EMAIL, GMAIL_APP_PASSWORD)
         server.sendmail(ADMIN_EMAIL, [customer_email], msg.as_string())
         server.quit()
-        print(f"✅ Cancellation OTP ({cancel_otp}) sent to {customer_email}")
         return True
     except Exception as e:
         print(f"❌ Failed to send cancellation OTP: {e}")
@@ -121,7 +135,7 @@ Sudarshan Food Production
 
 
 def send_delivery_confirmed_notification(customer_name, customer_email, customer_phone, order_id, items_summary, address):
-    """Sends a Thank You & Delivery Receipt email (and SMS) with exact IST date and time."""
+    """Sends a Thank You & Delivery Receipt via Email, SMS, and WhatsApp with exact IST date and time."""
     ist = timezone(timedelta(hours=5, minutes=30))
     now_ist = datetime.now(ist)
     delivered_date = now_ist.strftime("%d %B %Y")
@@ -156,7 +170,7 @@ Sudarshan Food Production, Akola
         server.login(ADMIN_EMAIL, GMAIL_APP_PASSWORD)
         server.sendmail(ADMIN_EMAIL, [customer_email], msg.as_string())
         server.quit()
-        print(f"✅ Delivery confirmation email sent to {customer_email} at {delivered_date} {delivered_time}")
+        print(f"✅ Delivery confirmation email sent to {customer_email}")
     except Exception as e:
         print(f"❌ Delivery confirmation email failed: {e}")
 
@@ -166,13 +180,28 @@ Sudarshan Food Production, Akola
             target_phone = customer_phone.strip()
             if not target_phone.startswith("+"):
                 target_phone = "+91" + target_phone
-            client.messages.create(
-                from_=TWILIO_PHONE_NUMBER,
-                body=f"Sudarshan Foods: Hello {customer_name}, your Order #{order_id} ({items_summary}) was delivered on {delivered_date} at {delivered_time}. Thank you for ordering with us!",
-                to=target_phone
+
+            sms_text = (
+                f"Sudarshan Foods: Hello {customer_name}, your Order #{order_id} "
+                f"({items_summary}) was delivered on {delivered_date} at {delivered_time}. "
+                f"Thank you for ordering with us!"
             )
+
+            try:
+                client.messages.create(from_=TWILIO_PHONE_NUMBER, body=sms_text, to=target_phone)
+            except Exception as e:
+                print(f"❌ Delivery confirmation SMS failed: {e}")
+
+            try:
+                client.messages.create(
+                    from_=TWILIO_WHATSAPP_NUMBER,
+                    body=f"✅ *Order #{order_id} Delivered!*\nHello {customer_name}, your order ({items_summary}) was received on *{delivered_date}* at *{delivered_time}*.\n\n🙏 Thank you for choosing Sudarshan Food Production!",
+                    to=f"whatsapp:{target_phone}"
+                )
+            except Exception as e:
+                print(f"❌ Delivery confirmation WhatsApp failed: {e}")
         except Exception as e:
-            print(f"❌ Delivery confirmation SMS failed: {e}")
+            print(f"❌ Twilio client error: {e}")
 
 
 def send_whatsapp_and_sms(customer_name, customer_phone, items_summary, address, delivery_otp):
@@ -251,7 +280,7 @@ def run_auto_migrations():
                 conn.execute(text(sql))
                 conn.commit()
             except Exception:
-                pass
+                conn.rollback()
 
 
 def login_required(f):
@@ -383,18 +412,56 @@ def place_order():
     items_summary = request.form.get('cart_summary', '').strip()
     final_amount = int(request.form.get('final_amount', 0) or 0)
 
-    if not items_summary:
+    if not items_summary or final_amount <= 0:
         flash("Please add at least one food item to your cart before ordering.")
         return redirect(url_for('order'))
 
+    delivery_otp = str(random.randint(1000, 9999))
+
+    # 1. STRIPE CHECKOUT FLOW
+    if payment_mode == 'Stripe':
+        new_order = Order(
+            customer_name=name,
+            email=email,
+            phone=phone,
+            item_name=items_summary,
+            quantity="Cart",
+            total_amount=final_amount,
+            address=full_address,
+            payment_ref="[Stripe] Pending Payment",
+            status="Awaiting Stripe Payment",
+            delivery_otp=delivery_otp
+        )
+        db.session.add(new_order)
+        db.session.commit()
+
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'inr',
+                    'product_data': {
+                        'name': f"Sudarshan Foods Order #{new_order.id}",
+                        'description': items_summary,
+                    },
+                    'unit_amount': final_amount * 100,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            customer_email=email,
+            success_url=url_for('stripe_success', order_id=new_order.id, _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
+            cancel_url=url_for('order', _external=True),
+        )
+        return redirect(checkout_session.url, code=303)
+
+    # 2. MANUAL UPI OR CASH ON DELIVERY FLOW
     if payment_mode == 'UPI':
         payment_ref = f"[UPI] {request.form.get('payment_ref')}"
         order_status = "Pending Verification"
     else:
         payment_ref = "[Cash] Cash on Delivery"
         order_status = "COD / Cash Order"
-
-    delivery_otp = str(random.randint(1000, 9999))
 
     new_order = Order(
         customer_name=name,
@@ -422,6 +489,47 @@ def place_order():
         phone=phone,
         payment_mode=payment_mode,
         delivery_otp=delivery_otp
+    )
+
+
+@app.route('/stripe-success/<int:order_id>')
+@login_required
+def stripe_success(order_id):
+    session_id = request.args.get('session_id')
+    order_obj = Order.query.get_or_404(order_id)
+
+    if session_id:
+        stripe_session = stripe.checkout.Session.retrieve(session_id)
+        if stripe_session.payment_status == 'paid':
+            order_obj.payment_ref = f"[Stripe Paid] {stripe_session.payment_intent}"
+            order_obj.status = "Paid & Preparing"
+            db.session.commit()
+
+            send_email_notification(
+                order_obj.customer_name,
+                order_obj.email,
+                order_obj.phone,
+                order_obj.item_name,
+                order_obj.address,
+                order_obj.payment_ref,
+                order_obj.delivery_otp
+            )
+            send_whatsapp_and_sms(
+                order_obj.customer_name,
+                order_obj.phone,
+                order_obj.item_name,
+                order_obj.address,
+                order_obj.delivery_otp
+            )
+
+    return render_template(
+        'order.html',
+        success=True,
+        customer_name=order_obj.customer_name,
+        items_summary=order_obj.item_name,
+        phone=order_obj.phone,
+        payment_mode='Stripe',
+        delivery_otp=order_obj.delivery_otp
     )
 
 
