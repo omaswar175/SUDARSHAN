@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sudarshan Food Production - Fresh Diwali Faral</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/farar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cart.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='images/sudharshan icon.png') }}">
 </head>
 <body>
 
-    <!-- Header Navigation -->
     <header>
         <nav class="nav-container">
             <a href="{{ url_for('home') }}" class="brand-logo">
@@ -22,7 +22,7 @@
                 <li><a href="{{ url_for('ingredients') }}">Ingredients</a></li>
                 
                 {% if session.get('user_id') %}
-                    <li><a href="{{ url_for('user_portal') }}" style="color: #fef08a; font-weight: bold;">My Portal</a></li>
+                    <li><a href="{{ url_for('user_portal') }}" style="color: #F59E0B; font-weight: bold;">My Portal</a></li>
                     <li>
                         <a href="{{ url_for('logout') }}" class="nav-auth-btn logout-btn">
                             Logout ({{ session.get('user_name').split()[0] }})
@@ -30,9 +30,7 @@
                     </li>
                 {% else %}
                     <li>
-                        <a href="{{ url_for('login') }}" class="nav-auth-btn login-btn">
-                            Log In
-                        </a>
+                        <a href="{{ url_for('login') }}" class="nav-auth-btn login-btn">Log In</a>
                     </li>
                 {% endif %}
             </ul>
@@ -50,6 +48,14 @@
                 <img src="{{ url_for('static', filename='images/chorafalli_1280x720.png') }}" alt="Chorafalli Banner">
             </div>
         </div>
+
+        <!-- Swiggy-Style Hygiene & Trust Strip -->
+        <div class="trust-strip">
+            <div class="trust-badge"><span>🌿</span> 100% Pure Vegetarian</div>
+            <div class="trust-badge"><span>🥜</span> Pure Groundnut Oil</div>
+            <div class="trust-badge"><span>⚡</span> Same-Day Akola Delivery</div>
+            <div class="trust-badge"><span>🛡️</span> Zero Preservatives</div>
+        </div>
     </section>
 
     <!-- Product Showcase -->
@@ -58,24 +64,48 @@
         <div class="food_items">
             
             <div class="food_items_pro">
+                <div class="card-top-badges">
+                    <span class="veg-icon" title="100% Vegetarian"><span></span></span>
+                    <span class="bestseller-tag">★ BESTSELLER</span>
+                </div>
                 <img src="{{ url_for('static', filename='images/chakli3d.png') }}" alt="Chakli">
                 <div class="food-title">CHAKLI</div>
+                <div class="food-meta">
+                    <span class="rating-pill">★ 4.9 (180+)</span>
+                    <span class="price-tag">Starts at ₹90</span>
+                </div>
                 <div class="btn">
                     <a href="{{ url_for('order', item='Chakli') }}"><input type="button" value="ORDER NOW"></a>
                 </div>
             </div>
 
             <div class="food_items_pro">
+                <div class="card-top-badges">
+                    <span class="veg-icon" title="100% Vegetarian"><span></span></span>
+                    <span class="bestseller-tag">🔥 FRESH BATCH</span>
+                </div>
                 <img src="{{ url_for('static', filename='images/chorafalli3d.png') }}" alt="Chorafalli">
                 <div class="food-title">CHORAFALLI</div>
+                <div class="food-meta">
+                    <span class="rating-pill">★ 4.8 (140+)</span>
+                    <span class="price-tag">Starts at ₹85</span>
+                </div>
                 <div class="btn">
                     <a href="{{ url_for('order', item='Chorafalli') }}"><input type="button" value="ORDER NOW"></a>
                 </div>
             </div>
 
             <div class="food_items_pro">
+                <div class="card-top-badges">
+                    <span class="veg-icon" title="100% Vegetarian"><span></span></span>
+                    <span class="bestseller-tag">✨ LIGHT & CRISPY</span>
+                </div>
                 <img src="{{ url_for('static', filename='images/makkapoha3d.png') }}" alt="Makka Poha">
                 <div class="food-title">MAKKA POHA</div>
+                <div class="food-meta">
+                    <span class="rating-pill">★ 4.8 (110+)</span>
+                    <span class="price-tag">Starts at ₹70</span>
+                </div>
                 <div class="btn">
                     <a href="{{ url_for('order', item='Makka Poha') }}"><input type="button" value="ORDER NOW"></a>
                 </div>
@@ -84,7 +114,6 @@
         </div>
     </main>
 
-    <!-- Footer -->
     <footer>
         <div class="footer-grid">
             <div class="footer-col">

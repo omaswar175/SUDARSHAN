@@ -6,6 +6,7 @@
     <title>My Orders Portal - Sudarshan Food Production</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/farar.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/order.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cart.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='images/sudharshan icon.png') }}">
 </head>
 <body>
@@ -21,73 +22,94 @@
                 <li><a href="{{ url_for('about') }}">About Us</a></li>
                 <li><a href="{{ url_for('ingredients') }}">Ingredients</a></li>
                 <li><a href="{{ url_for('order') }}">Order Now</a></li>
-                <li><a href="{{ url_for('user_portal') }}" style="color: #fef08a; font-weight: bold;">My Orders</a></li>
+                <li><a href="{{ url_for('user_portal') }}" style="color: #F59E0B; font-weight: bold;">My Orders</a></li>
                 <li><a href="{{ url_for('profile') }}">My Profile</a></li>
                 <li><a href="{{ url_for('logout') }}" class="nav-auth-btn logout-btn">Logout ({{ session.get('user_name').split()[0] }})</a></li>
             </ul>
         </nav>
     </header>
 
-    <div class="order-wrapper">
+    <div class="order-wrapper" style="max-width: 760px;">
         <div class="order-card">
             <h1 style="text-align: center;">My Orders Portal</h1>
-            <p style="text-align: center; color: #6b7280; margin-bottom: 20px;">View order history and real-time delivery status.</p>
+            <p style="text-align: center; color: #5C5263; margin-bottom: 20px;">Track your live delivery progress, reorder favorites, or download invoices.</p>
 
             <form action="{{ url_for('user_portal') }}" method="POST" style="margin-bottom: 25px;">
-                <label for="phone" style="font-weight: bold; color: #374151;">Registered Mobile Number:</label>
+                <label for="phone" style="font-weight: bold; color: #2E1437;">Registered Mobile Number:</label>
                 <div style="display: flex; gap: 10px; margin-top: 5px;">
-                    <input type="tel" id="phone" name="phone" value="{{ phone if phone else '' }}" placeholder="Enter 10-digit mobile number" required style="flex: 1; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
-                    <button type="submit" style="padding: 10px 20px; background: #059669; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">VIEW MY ORDERS</button>
+                    <input type="tel" id="phone" name="phone" value="{{ phone if phone else '' }}" placeholder="Enter 10-digit mobile number" required style="flex: 1; padding: 10px; border: 1.5px solid #D5DCE6; border-radius: 6px;">
+                    <button type="submit" class="btn-submit" style="width: auto; margin-top: 0;">VIEW MY ORDERS</button>
                 </div>
             </form>
 
             {% if orders is not none %}
-                <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="background: #2E1437; border: 2px solid #F59E0B; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <h3 style="margin: 0; color: #b45309;">Welcome, {{ session.get('user_name') }}</h3>
-                        <p style="margin: 5px 0 0 0; color: #78350f; font-size: 0.9rem;">📱 {{ phone }}</p>
+                        <h3 style="margin: 0; color: #F59E0B !important;">Welcome, {{ session.get('user_name') }}</h3>
+                        <p style="margin: 4px 0 0 0; color: #EEF1F5; font-size: 0.9rem;">📱 {{ phone }}</p>
                     </div>
-                    <span style="background: #d97706; color: white; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem;">Total Orders: {{ orders|length }}</span>
+                    <span style="background: #F59E0B; color: #2E1437; padding: 6px 14px; border-radius: 12px; font-weight: 800; font-size: 0.85rem;">Total Orders: {{ orders|length }}</span>
                 </div>
-
-                <h3 style="color: #374151; margin-bottom: 15px;">Your Booking Status:</h3>
 
                 {% if orders %}
                     {% for order in orders %}
-                        <div style="border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px; margin-bottom: 15px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <h3 style="margin: 0; color: #1f2937;">Order #{{ order.id }}</h3>
-                                
-                                {% if 'Confirmed' in order.status %}
-                                    <span style="background: #d1fae5; color: #065f46; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem;">✅ {{ order.status }}</span>
-                                {% elif 'Out for Delivery' in order.status or 'Dispatched' in order.status %}
-                                    <span style="background: #dbeafe; color: #1e40af; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem;">🚚 {{ order.status }}</span>
-                                {% elif 'Cancelled' in order.status %}
-                                    <span style="background: #fee2e2; color: #991b1b; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem;">❌ {{ order.status }}</span>
+                        {% set step = 1 %}
+                        {% if 'Out for Delivery' in order.status or 'Dispatched' in order.status %}
+                            {% set step = 3 %}
+                        {% elif 'Confirmed' in order.status %}
+                            {% set step = 4 %}
+                        {% else %}
+                            {% set step = 2 %}
+                        {% endif %}
+
+                        <div style="border: 1.5px solid #D5DCE6; border-radius: 12px; padding: 18px; margin-bottom: 18px; background: #FFFFFF; box-shadow: 0 4px 10px rgba(46,20,55,0.05);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <h3 style="margin: 0; color: #2E1437;">Order #{{ order.id }}</h3>
+                                {% if 'Cancelled' in order.status %}
+                                    <span style="background: #FEE2E2; color: #991B1B; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem;">❌ Cancelled</span>
+                                {% elif 'Confirmed' in order.status %}
+                                    <span style="background: #2E1437; color: #F59E0B; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem;">✅ Delivered & Verified</span>
                                 {% else %}
-                                    <span style="background: #fef3c7; color: #92400e; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem;">⏳ {{ order.status }}</span>
+                                    <span style="background: #FEF3C7; color: #92400E; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem;">⏳ {{ order.status }}</span>
                                 {% endif %}
                             </div>
 
-                            <p style="margin: 6px 0; color: #4b5563;"><strong>Items Booked:</strong> <span style="color: #b45309; font-weight: bold;">{{ order.item_name }}</span></p>
-                            <p style="margin: 6px 0; color: #4b5563;"><strong>Delivery Address:</strong> {{ order.address }}</p>
-                            <p style="margin: 6px 0; color: #4b5563;"><strong>Payment Reference:</strong> <span style="color: #059669; font-weight: bold;">{{ order.payment_ref }}</span></p>
+                            <!-- 4-Step Live Progress Stepper -->
+                            {% if 'Cancelled' not in order.status %}
+                            <div class="tracker-steps">
+                                <div class="t-step done"><span>1</span>Order Placed</div>
+                                <div class="t-step {% if step >= 2 %}done{% endif %}"><span>2</span>Preparing</div>
+                                <div class="t-step {% if step >= 3 %}done{% endif %}"><span>3</span>Out for Delivery</div>
+                                <div class="t-step {% if step >= 4 %}done{% endif %}"><span>4</span>Delivered</div>
+                            </div>
+                            {% endif %}
 
-                            <!-- Customer Delivery OTP Display -->
+                            <p style="margin: 6px 0; color: #1E1324;"><strong>Items:</strong> <span style="color: #D97706; font-weight: bold;">{{ order.item_name }}</span></p>
+                            <p style="margin: 6px 0; color: #5C5263;"><strong>Address:</strong> {{ order.address }}</p>
+                            <p style="margin: 6px 0; color: #5C5263;"><strong>Payment:</strong> {{ order.payment_ref }}</p>
+
                             {% if order.delivery_otp and 'Confirmed' not in order.status and 'Cancelled' not in order.status %}
-                                <div style="margin-top: 12px; background: #f0fdf4; border: 1px dashed #16a34a; padding: 10px 15px; border-radius: 8px; display: inline-block;">
-                                    <span style="color: #166534; font-weight: bold; font-size: 0.9rem;">🔑 Delivery Verification OTP: </span>
-                                    <strong style="color: #15803d; font-size: 1.1rem; letter-spacing: 2px;">{{ order.delivery_otp }}</strong>
-                                    <span style="color: #15803d; font-size: 0.8rem; display: block;">Share this code with the delivery executive upon receiving your order.</span>
+                                <div style="margin-top: 10px; background: #EEF1F5; border: 1.5px dashed #2E1437; padding: 10px 14px; border-radius: 8px; display: inline-block;">
+                                    <span style="color: #2E1437; font-weight: bold; font-size: 0.9rem;">🔑 Delivery OTP: </span>
+                                    <strong style="color: #D97706; font-size: 1.15rem; letter-spacing: 2px;">{{ order.delivery_otp }}</strong>
                                 </div>
                             {% endif %}
+
+                            <!-- Reorder & Invoice Action Row -->
+                            <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid #EEF1F5; display: flex; gap: 10px; flex-wrap: wrap;">
+                                <a href="{{ url_for('order', reorder=order.item_name) }}" style="background: #F59E0B; color: #2E1437; padding: 7px 14px; border-radius: 6px; font-weight: 700; text-decoration: none; font-size: 0.85rem;">
+                                    ↻ Reorder Items
+                                </a>
+                                <a href="{{ url_for('download_invoice', order_id=order.id) }}" target="_blank" style="background: #2E1437; color: #FFFFFF; padding: 7px 14px; border-radius: 6px; font-weight: 600; text-decoration: none; font-size: 0.85rem;">
+                                    🧾 View / Print Invoice
+                                </a>
+                            </div>
                         </div>
                     {% endfor %}
                 {% else %}
-                    <p style="text-align: center; color: #6b7280; padding: 20px;">No order history found for this phone number.</p>
+                    <p style="text-align: center; color: #5C5263; padding: 20px;">No order history found for this phone number.</p>
                 {% endif %}
             {% endif %}
-
         </div>
     </div>
 

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Sudarshan Foods</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/farar.css') }}">
+    <style>
+        .admin-wrap { max-width: 1300px; margin: 24px auto; padding: 0 16px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: #2E1437; color: #FFFFFF; padding: 18px; border-radius: 12px; border-bottom: 4px solid #F59E0B; }
+        .stat-card h4 { color: #EEF1F5; font-size: 0.9rem; margin-bottom: 6px; }
+        .stat-card p { color: #F59E0B; font-size: 1.8rem; font-weight: 800; margin: 0; }
+        .filter-bar { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+        .filter-bar input { padding: 10px 14px; border: 1.5px solid #D5DCE6; border-radius: 8px; min-width: 260px; }
+        .tab-btn { padding: 8px 14px; border: 1.5px solid #2E1437; background: #FFFFFF; color: #2E1437; border-radius: 8px; font-weight: 700; cursor: pointer; }
+        .tab-btn.active { background: #2E1437; color: #F59E0B; }
+        table { border-collapse: collapse; width: 100%; background: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 18px rgba(46,20,55,0.08); }
+        th { background: #2E1437; color: #F59E0B; padding: 13px; text-align: left; font-size: 0.9rem; }
+        td { padding: 12px; border-bottom: 1px solid #EEF1F5; font-size: 0.9rem; }
+        .badge { padding: 4px 10px; border-radius: 12px; font-weight: 700; font-size: 0.8rem; }
+        .pending { background: #FEF3C7; color: #92400E; }
+        .confirmed { background: #D1FAE5; color: #065F46; }
+        .dispatched { background: #DBEAFE; color: #1E40AF; }
+        .cancelled { background: #FEE2E2; color: #991B1B; }
+        .btn-act { padding: 6px 10px; margin: 2px; border: none; border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer; text-decoration: none; color: #FFF; display: inline-block; }
+        .locked-tag { background: #EEF1F5; color: #2E1437; padding: 6px 12px; border-radius: 6px; font-weight: 700; font-size: 0.82rem; border: 1px solid #D5DCE6; }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="nav-container">
+            <span class="brand-title">📦 SUDARSHAN ADMIN CONSOLE</span>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('home') }}">View Store</a></li>
+                <li><a href="{{ url_for('admin_logout') }}" class="nav-auth-btn logout-btn">Logout Admin</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="admin-wrap">
+        <div class="stats-grid">
+            <div class="stat-card"><h4>Total Orders</h4><p>{{ total_orders }}</p></div>
+            <div class="stat-card"><h4>Active / Pending</h4><p>{{ pending_count }}</p></div>
+            <div class="stat-card"><h4>Delivered & Verified</h4><p>{{ completed_count }}</p></div>
+            <div class="stat-card"><h4>Gross Revenue</h4><p>₹{{ total_revenue }}</p></div>
+        </div>
+
+        <div class="filter-bar">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="tab-btn active" onclick="filterStatus('all', this)">All Orders</button>
+                <button class="tab-btn" onclick="filterStatus('pending', this)">Pending / COD</button>
+                <button class="tab-btn" onclick="filterStatus('dispatched', this)">Out for Delivery</button>
+                <button class="tab-btn" onclick="filterStatus('confirmed', this)">Completed</button>
+            </div>
+            <input type="text" id="search-input" onkeyup="searchOrders()" placeholder="🔍 Search by customer name, phone, or ID...">
+        </div>
+
+        <table id="orders-table">
+            <tr>
+                <th>ID</th>
+                <th>Customer</th>
+                <th>Phone</th>
+                <th>Items & Bill</th>
+                <th>Address</th>
+                <th>Payment</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+            {% for o in orders %}
+                {% set st = 'pending' %}
+                {% if 'Confirmed' in o.status %}{% set st = 'confirmed' %}
+                {% elif 'Delivery' in o.status or 'Dispatched' in o.status %}{% set st = 'dispatched' %}
+                {% elif 'Cancelled' in o.status %}{% set st = 'cancelled' %}{% endif %}
+            <tr data-status="{{ st }}">
+                <td><strong>#{{ o.id }}</strong></td>
+                <td>{{ o.customer_name }}<br><small style="color:#5C5263;">{{ o.email }}</small></td>
+                <td>{{ o.phone }}</td>
+                <td style="color: #D97706; font-weight: 700;">{{ o.item_name }}</td>
+                <td>{{ o.address }}</td>
+                <td>{{ o.payment_ref }}</td>
+                <td><span class="badge {{ st }}">{{ o.status }}</span></td>
+                <td>
+                    {% if st in ['confirmed', 'cancelled'] %}
+                        <span class="locked-tag">🔒 Locked</span>
+                    {% else %}
+                        <button class="btn-act" style="background:#059669;" onclick="confirmWithOTP('{{ o.id }}', '{{ o.delivery_otp }}')">Confirm (OTP)</button>
+                        <a class="btn-act" style="background:#2563EB;" href="/update-order-status?id={{ o.id }}&status=Out%20for%20Delivery">Dispatch</a>
+                        <button class="btn-act" style="background:#DC2626;" onclick="cancelWithOTP('{{ o.id }}', this)">Cancel (OTP)</button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <script>
+    function confirmWithOTP(orderId, expectedOtp) {
+        var userOtp = prompt("Enter the 4-digit Delivery OTP provided by the customer:");
+        if (userOtp === null) return;
+        if (userOtp.trim() === expectedOtp) {
+            window.location.href = "/update-order-status?id=" + orderId + "&status=Confirmed%20%26%20Verified";
+        } else {
+            alert("❌ Incorrect Delivery OTP!");
+        }
+    }
+
+    function cancelWithOTP(orderId, btn) {
+        btn.disabled = true;
+        btn.innerText = "Sending...";
+        fetch("/send-cancel-otp?id=" + orderId, { method: "POST" })
+            .then(r => r.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerText = "Cancel (OTP)";
+                if (!data.success) { alert("❌ " + data.message); return; }
+                var code = prompt("✅ Cancellation OTP sent to " + data.email + ".\nEnter 4-digit OTP to cancel Order #" + orderId + ":");
+                if (code !== null) {
+                    window.location.href = "/update-order-status?id=" + orderId + "&status=Cancelled&otp=" + encodeURIComponent(code.trim());
+                }
+            });
+    }
+
+    function filterStatus(status, btn) {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        document.querySelectorAll("#orders-table tr[data-status]").forEach(row => {
+            row.style.display = (status === "all" || row.dataset.status === status) ? "" : "none";
+        });
+    }
+
+    function searchOrders() {
+        const q = document.getElementById("search-input").value.toLowerCase();
+        document.querySelectorAll("#orders-table tr[data-status]").forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(q) ? "" : "none";
+        });
+    }
+    </script>
+</body>
+</html>

@@ -1,10 +1,13 @@
 import os
 import random
 import smtplib
+from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
+from email.utils import formatdate
 from functools import wraps
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 from twilio.rest import Client
 
 app = Flask(__name__)
@@ -20,10 +23,11 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # ==============================================================================
-# NOTIFICATION & SMS CONFIGURATION
+# NOTIFICATION & ADMIN CONFIGURATION
 # ==============================================================================
 ADMIN_EMAIL = "omaswar175@gmail.com"
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "tpdb awfp gcyp uaaz")
+ADMIN_SECRET_CODE = os.environ.get("ADMIN_SECRET_CODE", "SudarshanAkola2026")
 
 ADMIN_PHONE_NUMBER = "+918830446585"
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "YOUR_TWILIO_ACCOUNT_SID")
@@ -33,117 +37,179 @@ TWILIO_WHATSAPP_NUMBER = os.environ.get("TWILIO_WHATSAPP_NUMBER", "whatsapp:+141
 
 
 def send_email_notification(customer_name, customer_email, phone, items_summary, address, payment_ref, delivery_otp):
-    """Sends email notifications with the Delivery OTP to both Customer and Admin."""
-    
-    # 1. Customer Email
+    """Sends Delivery OTP to customer email and order alert to admin email."""
     customer_subject = "🔑 Your Delivery OTP for Sudarshan Foods Order"
-    customer_body = f"""
-    Hello {customer_name},
+    customer_body = f"""Hello {customer_name},
 
-    Thank you for ordering with Sudarshan Foods!
+Thank you for ordering with Sudarshan Foods!
 
-    Items: {items_summary}
-    Address: {address}
-    Payment Info: {payment_ref}
+Items: {items_summary}
+Address: {address}
+Payment Info: {payment_ref}
 
-    🔑 YOUR DELIVERY VERIFICATION OTP: {delivery_otp}
+🔑 YOUR DELIVERY VERIFICATION OTP: {delivery_otp}
 
-    Please share this code with the delivery executive upon receiving your order.
-    """
-    msg_customer = MIMEText(customer_body)
+Please share this code with the delivery executive upon receiving your order.
+"""
+    msg_customer = MIMEText(customer_body, 'plain', 'utf-8')
     msg_customer['Subject'] = customer_subject
-    msg_customer['From'] = ADMIN_EMAIL
+    msg_customer['From'] = f"Sudarshan Foods <{ADMIN_EMAIL}>"
     msg_customer['To'] = customer_email
+    msg_customer['Reply-To'] = ADMIN_EMAIL
+    msg_customer['Date'] = formatdate(localtime=True)
 
-    # 2. Admin Email
     admin_subject = f"🔔 New Order Alert: {customer_name}"
-    admin_body = f"""
-    New Order Received on Sudarshan Foods!
+    admin_body = f"""New Order Received on Sudarshan Foods!
 
-    Customer Name:    {customer_name}
-    Customer Email:   {customer_email}
-    Phone Number:     {phone}
-    Items Ordered:    {items_summary}
-    Delivery Address: {address}
-    Payment Info:     {payment_ref}
-    🔑 DELIVERY OTP:   {delivery_otp}
-    """
-    msg_admin = MIMEText(admin_body)
+Customer Name:    {customer_name}
+Customer Email:   {customer_email}
+Phone Number:     {phone}
+Items Ordered:    {items_summary}
+Delivery Address: {address}
+Payment Info:     {payment_ref}
+"""
+    msg_admin = MIMEText(admin_body, 'plain', 'utf-8')
     msg_admin['Subject'] = admin_subject
-    msg_admin['From'] = ADMIN_EMAIL
+    msg_admin['From'] = f"Sudarshan System <{ADMIN_EMAIL}>"
     msg_admin['To'] = ADMIN_EMAIL
+    msg_admin['Date'] = formatdate(localtime=True)
 
     try:
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
         server.login(ADMIN_EMAIL, GMAIL_APP_PASSWORD)
-        server.sendmail(ADMIN_EMAIL, customer_email, msg_customer.as_string())
-        server.sendmail(ADMIN_EMAIL, ADMIN_EMAIL, msg_admin.as_string())
+        server.sendmail(ADMIN_EMAIL, [customer_email], msg_customer.as_string())
+        server.sendmail(ADMIN_EMAIL, [ADMIN_EMAIL], msg_admin.as_string())
         server.quit()
-        print(f"✅ Email notifications sent successfully!")
+        print("✅ Order placement emails sent successfully!")
     except Exception as e:
         print(f"❌ Email notification failed: {e}")
 
 
-def send_whatsapp_and_sms(customer_name, customer_phone, items_summary, address, delivery_otp):
-    """Sends SMS with Delivery OTP to both the Customer and Admin via Twilio."""
-    if TWILIO_ACCOUNT_SID == "YOUR_TWILIO_ACCOUNT_SID":
-        print("⚠️ Twilio credentials not configured. Skipping SMS alerts.")
-        return
+def send_cancellation_otp_email(customer_name, customer_email, order_id, items_summary, cancel_otp):
+    """Sends a 4-digit Cancellation OTP to the customer's email."""
+    subject = f"⚠️ Order #{order_id} Cancellation Verification OTP - Sudarshan Foods"
+    body = f"""Hello {customer_name},
+
+A cancellation request has been initiated for your Sudarshan Foods Order #{order_id} ({items_summary}).
+
+🔐 YOUR ORDER CANCELLATION OTP: {cancel_otp}
+
+Please share this 4-digit code with our team only if you authorize cancelling this order.
+
+Regards,
+Sudarshan Food Production
+"""
+    msg = MIMEText(body, 'plain', 'utf-8')
+    msg['Subject'] = subject
+    msg['From'] = f"Sudarshan Foods <{ADMIN_EMAIL}>"
+    msg['To'] = customer_email
+    msg['Reply-To'] = ADMIN_EMAIL
+    msg['Date'] = formatdate(localtime=True)
 
     try:
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(ADMIN_EMAIL, GMAIL_APP_PASSWORD)
+        server.sendmail(ADMIN_EMAIL, [customer_email], msg.as_string())
+        server.quit()
+        print(f"✅ Cancellation OTP ({cancel_otp}) sent to {customer_email}")
+        return True
+    except Exception as e:
+        print(f"❌ Failed to send cancellation OTP: {e}")
+        return False
+
+
+def send_delivery_confirmed_notification(customer_name, customer_email, customer_phone, order_id, items_summary, address):
+    """Sends a Thank You & Delivery Receipt email (and SMS) with exact IST date and time."""
+    ist = timezone(timedelta(hours=5, minutes=30))
+    now_ist = datetime.now(ist)
+    delivered_date = now_ist.strftime("%d %B %Y")
+    delivered_time = now_ist.strftime("%I:%M %p")
+
+    subject = f"✅ Order #{order_id} Delivered! Thank You - Sudarshan Foods"
+    body = f"""Hello {customer_name},
+
+Your Sudarshan Foods order has been successfully delivered and verified!
+
+📦 Order ID:       #{order_id}
+🍿 Items:          {items_summary}
+📍 Delivered To:   {address}
+📅 Delivery Date:  {delivered_date}
+⏰ Delivery Time:  {delivered_time} (IST)
+
+🙏 Thank you for choosing Sudarshan Food Production! We hope you enjoy our authentic, fresh homemade snacks. We look forward to serving you again soon!
+
+Warm regards,
+Sudarshan Food Production, Akola
+"""
+    msg = MIMEText(body, 'plain', 'utf-8')
+    msg['Subject'] = subject
+    msg['From'] = f"Sudarshan Foods <{ADMIN_EMAIL}>"
+    msg['To'] = customer_email
+    msg['Reply-To'] = ADMIN_EMAIL
+    msg['Date'] = formatdate(localtime=True)
+
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(ADMIN_EMAIL, GMAIL_APP_PASSWORD)
+        server.sendmail(ADMIN_EMAIL, [customer_email], msg.as_string())
+        server.quit()
+        print(f"✅ Delivery confirmation email sent to {customer_email} at {delivered_date} {delivered_time}")
+    except Exception as e:
+        print(f"❌ Delivery confirmation email failed: {e}")
+
+    if TWILIO_ACCOUNT_SID != "YOUR_TWILIO_ACCOUNT_SID":
+        try:
+            client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+            target_phone = customer_phone.strip()
+            if not target_phone.startswith("+"):
+                target_phone = "+91" + target_phone
+            client.messages.create(
+                from_=TWILIO_PHONE_NUMBER,
+                body=f"Sudarshan Foods: Hello {customer_name}, your Order #{order_id} ({items_summary}) was delivered on {delivered_date} at {delivered_time}. Thank you for ordering with us!",
+                to=target_phone
+            )
+        except Exception as e:
+            print(f"❌ Delivery confirmation SMS failed: {e}")
+
+
+def send_whatsapp_and_sms(customer_name, customer_phone, items_summary, address, delivery_otp):
+    if TWILIO_ACCOUNT_SID == "YOUR_TWILIO_ACCOUNT_SID":
+        return
+    try:
         client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-        
-        # Standardize phone format for India (+91)
         target_customer_phone = customer_phone.strip()
         if not target_customer_phone.startswith("+"):
             target_customer_phone = "+91" + target_customer_phone
 
-        # 1. SMS to Customer (Contains OTP)
-        customer_msg = f"Sudarshan Foods: Hello {customer_name}, your order for {items_summary} is placed! Your Delivery OTP is: {delivery_otp}. Share this code upon delivery."
         try:
             client.messages.create(
                 from_=TWILIO_PHONE_NUMBER,
-                body=customer_msg,
+                body=f"Sudarshan Foods: Hello {customer_name}, your order for {items_summary} is placed! Your Delivery OTP is: {delivery_otp}.",
                 to=target_customer_phone
             )
-            print(f"✅ SMS OTP sent to customer phone: {target_customer_phone}")
         except Exception as e:
             print(f"❌ Customer SMS failed: {e}")
 
-        # 2. SMS to Admin (Contains Order Info & OTP)
-        admin_msg = f"New Order! Customer: {customer_name} ({customer_phone}), Items: {items_summary}, OTP: {delivery_otp}"
-        try:
-            client.messages.create(
-                from_=TWILIO_PHONE_NUMBER,
-                body=admin_msg,
-                to=ADMIN_PHONE_NUMBER
-            )
-            print(f"✅ Admin SMS sent to: {ADMIN_PHONE_NUMBER}")
-        except Exception as e:
-            print(f"❌ Admin SMS failed: {e}")
-
-        # 3. WhatsApp Alert to Admin
         try:
             wa_body = (
                 f"🎉 *New Order Alert!*\n"
                 f"*Customer:* {customer_name}\n"
                 f"*Phone:* {customer_phone}\n"
                 f"*Items:* {items_summary}\n"
-                f"*Address:* {address}\n"
-                f"🔑 *Delivery OTP:* {delivery_otp}"
+                f"*Address:* {address}"
             )
             client.messages.create(
                 from_=TWILIO_WHATSAPP_NUMBER,
                 body=wa_body,
                 to=f"whatsapp:{ADMIN_PHONE_NUMBER}"
             )
-            print(f"✅ Admin WhatsApp sent!")
         except Exception as e:
             print(f"❌ WhatsApp alert failed: {e}")
-
     except Exception as e:
-        print(f"❌ Twilio initialization error: {e}")
+        print(f"❌ Twilio error: {e}")
 
 
 # ==============================================================================
@@ -155,6 +221,8 @@ class User(db.Model):
     phone = db.Column(db.String(15), unique=True, nullable=False)
     email = db.Column(db.String(100), nullable=False)
     password = db.Column(db.String(100), nullable=False)
+    saved_address = db.Column(db.Text, nullable=True)
+
 
 class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -163,10 +231,27 @@ class Order(db.Model):
     phone = db.Column(db.String(15), nullable=False)
     item_name = db.Column(db.Text, nullable=False)
     quantity = db.Column(db.String(50), nullable=True)
+    total_amount = db.Column(db.Integer, default=0)
     address = db.Column(db.Text, nullable=False)
     payment_ref = db.Column(db.String(100), nullable=True)
     status = db.Column(db.String(30), default="Pending Verification")
     delivery_otp = db.Column(db.String(10), nullable=True)
+    cancel_otp = db.Column(db.String(10), nullable=True)
+
+
+def run_auto_migrations():
+    """Safely adds any missing columns to existing SQLite/PostgreSQL tables."""
+    with db.engine.connect() as conn:
+        for sql in [
+            'ALTER TABLE "user" ADD COLUMN saved_address TEXT',
+            'ALTER TABLE "order" ADD COLUMN total_amount INTEGER DEFAULT 0',
+            'ALTER TABLE "order" ADD COLUMN cancel_otp VARCHAR(10)'
+        ]:
+            try:
+                conn.execute(text(sql))
+                conn.commit()
+            except Exception:
+                pass
 
 
 def login_required(f):
@@ -179,20 +264,34 @@ def login_required(f):
     return decorated_function
 
 
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if request.args.get('key') == ADMIN_SECRET_CODE:
+            session['is_admin'] = True
+        if not session.get('is_admin'):
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 # ==============================================================================
-# ROUTES
+# CUSTOMER ROUTES
 # ==============================================================================
 @app.route('/')
 def home():
     return render_template('index.html')
 
+
 @app.route('/about')
 def about():
     return render_template('about.html')
 
+
 @app.route('/ingredients')
 def ingredients():
     return render_template('ingridient.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -201,7 +300,7 @@ def login():
         phone = request.form.get('phone', '').strip()
         password = request.form.get('password', '').strip()
         next_item = request.form.get('next_item', '')
-        
+
         user = User.query.filter_by(phone=phone, password=password).first()
         if user:
             session['user_id'] = user.id
@@ -215,6 +314,7 @@ def login():
             flash("Invalid Mobile Number or Password. Please try again.")
 
     return render_template('login.html', next_item=next_item)
+
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -242,45 +342,50 @@ def register():
         return redirect(url_for('order', item=next_item))
     return redirect(url_for('user_portal'))
 
+
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('home'))
 
+
 @app.route('/order')
 @login_required
 def order():
     selected_item = request.args.get('item', '')
-    return render_template('order.html', selected_item=selected_item)
+    reorder_items = request.args.get('reorder', '')
+    user = User.query.get(session.get('user_id'))
+    saved_address = user.saved_address if user and user.saved_address else ''
+    return render_template(
+        'order.html',
+        selected_item=selected_item,
+        reorder_items=reorder_items,
+        saved_address=saved_address
+    )
+
 
 @app.route('/place-order', methods=['POST'])
 @login_required
 def place_order():
+    user = User.query.get(session.get('user_id'))
     name = session.get('user_name')
     email = session.get('user_email')
     phone = session.get('user_phone')
-    address = request.form.get('address')
+
+    locality = request.form.get('locality', '').strip()
+    street_address = request.form.get('address', '').strip()
+    full_address = f"{street_address}, {locality}, Akola" if locality else street_address
+
+    if user and street_address:
+        user.saved_address = street_address
+
     payment_mode = request.form.get('payment_mode')
-    
-    selected_items = []
-    chakli_qty = request.form.get('chakli_qty')
-    if request.form.get('chakli_check') and chakli_qty:
-        selected_items.append(f"Chakli ({chakli_qty})")
-        
-    chorafalli_qty = request.form.get('chorafalli_qty')
-    if request.form.get('chorafalli_check') and chorafalli_qty:
-        selected_items.append(f"Chorafalli ({chorafalli_qty})")
-        
-    makka_qty = request.form.get('makka_qty')
-    if request.form.get('makka_check') and makka_qty:
-        selected_items.append(f"Makka Poha ({makka_qty})")
+    items_summary = request.form.get('cart_summary', '').strip()
+    final_amount = int(request.form.get('final_amount', 0) or 0)
 
-    if not selected_items:
-        fallback_item = request.form.get('fallback_item', 'Custom Food Order')
-        fallback_qty = request.form.get('fallback_qty', '1 kg')
-        selected_items.append(f"{fallback_item} ({fallback_qty})")
-
-    items_summary = ", ".join(selected_items)
+    if not items_summary:
+        flash("Please add at least one food item to your cart before ordering.")
+        return redirect(url_for('order'))
 
     if payment_mode == 'UPI':
         payment_ref = f"[UPI] {request.form.get('payment_ref')}"
@@ -296,8 +401,9 @@ def place_order():
         email=email,
         phone=phone,
         item_name=items_summary,
-        quantity="Multiple",
-        address=address,
+        quantity="Cart",
+        total_amount=final_amount,
+        address=full_address,
         payment_ref=payment_ref,
         status=order_status,
         delivery_otp=delivery_otp
@@ -305,11 +411,19 @@ def place_order():
     db.session.add(new_order)
     db.session.commit()
 
-    # Send Emails & SMS Alerts with OTP
-    send_email_notification(name, email, phone, items_summary, address, payment_ref, delivery_otp)
-    send_whatsapp_and_sms(name, phone, items_summary, address, delivery_otp)
+    send_email_notification(name, email, phone, items_summary, full_address, payment_ref, delivery_otp)
+    send_whatsapp_and_sms(name, phone, items_summary, full_address, delivery_otp)
 
-    return render_template('order.html', success=True, customer_name=name, items_summary=items_summary, phone=phone, payment_mode=payment_mode, delivery_otp=delivery_otp)
+    return render_template(
+        'order.html',
+        success=True,
+        customer_name=name,
+        items_summary=items_summary,
+        phone=phone,
+        payment_mode=payment_mode,
+        delivery_otp=delivery_otp
+    )
+
 
 @app.route('/portal', methods=['GET', 'POST'])
 @login_required
@@ -322,11 +436,23 @@ def user_portal():
         user_orders = Order.query.filter_by(phone=searched_phone).order_by(Order.id.desc()).all()
     return render_template('user_portal.html', orders=user_orders, phone=searched_phone)
 
+
+@app.route('/invoice/<int:order_id>')
+@login_required
+def download_invoice(order_id):
+    order_obj = Order.query.get_or_404(order_id)
+    if order_obj.phone != session.get('user_phone') and not session.get('is_admin'):
+        return "Unauthorized", 403
+    ist = timezone(timedelta(hours=5, minutes=30))
+    return render_template('invoice.html', order=order_obj, date_str=datetime.now(ist).strftime("%d %b %Y"))
+
+
 @app.route('/profile')
 @login_required
 def profile():
     user = User.query.get(session.get('user_id'))
     return render_template('profile.html', user=user)
+
 
 @app.route('/update-profile', methods=['POST'])
 @login_required
@@ -335,6 +461,7 @@ def update_profile():
     if user:
         user.name = request.form.get('name', '').strip()
         user.email = request.form.get('email', '').strip()
+        user.saved_address = request.form.get('saved_address', '').strip()
         new_password = request.form.get('password', '').strip()
         if new_password:
             user.password = new_password
@@ -344,107 +471,106 @@ def update_profile():
         flash("Profile updated successfully!")
     return redirect(url_for('profile'))
 
+
+# ==============================================================================
+# ADMIN LOGIN, DASHBOARD & OTP ENDPOINTS
+# ==============================================================================
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        code = request.form.get('admin_code', '').strip()
+        if code == ADMIN_SECRET_CODE:
+            session['is_admin'] = True
+            return redirect(url_for('admin_orders'))
+        flash("Invalid Admin Access Code.")
+    return render_template('admin_login.html')
+
+
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('is_admin', None)
+    return redirect(url_for('home'))
+
+
 @app.route('/admin')
+@admin_required
 def admin_orders():
-    secret_key = request.args.get('key')
-    if secret_key != 'SudarshanAkola2026':
-        return "<h1>404 Not Found</h1>", 404
-
     orders = Order.query.order_by(Order.id.desc()).all()
-    html = """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Admin Dashboard - Sudarshan Foods</title>
-        <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f9fafb; color: #1f2937; }
-            h2 { color: #b45309; }
-            table { border-collapse: collapse; width: 100%; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-            th { background-color: #d97706; color: white; padding: 12px; text-align: left; }
-            td { padding: 12px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
-            tr:hover { background-color: #fffbeb; }
-            .badge { padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 0.85rem; display: inline-block; }
-            .pending { background: #fef3c7; color: #92400e; }
-            .confirmed { background: #d1fae5; color: #065f46; }
-            .dispatched { background: #dbeafe; color: #1e40af; }
-            .cancelled { background: #fee2e2; color: #991b1b; }
-            .btn-action { padding: 6px 12px; margin: 2px; border: none; border-radius: 4px; font-size: 0.8rem; font-weight: bold; cursor: pointer; text-decoration: none; color: white; display: inline-block; }
-            .btn-confirm { background: #059669; }
-            .btn-dispatch { background: #2563eb; }
-            .btn-cancel { background: #dc2626; }
-        </style>
-        <script>
-        function confirmWithOTP(orderId, expectedOtp) {
-            var userOtp = prompt("Enter the 4-digit Delivery OTP provided by the customer:");
-            if (userOtp === null) return;
-            if (userOtp.trim() === expectedOtp) {
-                window.location.href = "/update-order-status?id=" + orderId + "&status=Confirmed%20%26%20Verified&key=SudarshanAkola2026";
-            } else {
-                alert("❌ Incorrect OTP! Order confirmation failed.");
-            }
-        }
-        </script>
-    </head>
-    <body>
-        <h2>📦 Customer Orders Management Dashboard</h2>
-        <table>
-            <tr>
-                <th>Order ID</th>
-                <th>Customer</th>
-                <th>Phone</th>
-                <th>Email</th>
-                <th>Items & Quantities</th>
-                <th>Address</th>
-                <th>Payment Ref</th>
-                <th>Status</th>
-                <th>Update Status</th>
-            </tr>
-    """
-    for o in orders:
-        badge_class = "pending"
-        if "Confirmed" in o.status:
-            badge_class = "confirmed"
-        elif "Dispatched" in o.status or "Out for Delivery" in o.status:
-            badge_class = "dispatched"
-        elif "Cancelled" in o.status:
-            badge_class = "cancelled"
+    total_orders = len(orders)
+    pending_count = sum(1 for o in orders if "Confirmed" not in o.status and "Cancelled" not in o.status)
+    completed_count = sum(1 for o in orders if "Confirmed" in o.status)
+    total_revenue = sum((o.total_amount or 0) for o in orders if "Cancelled" not in o.status)
 
-        html += f"""
-        <tr>
-            <td><strong>#{o.id}</strong></td>
-            <td>{o.customer_name}</td>
-            <td>{o.phone}</td>
-            <td>{o.email}</td>
-            <td style="color: #b45309; font-weight: bold;">{o.item_name}</td>
-            <td>{o.address}</td>
-            <td>{o.payment_ref if o.payment_ref else 'N/A'}</td>
-            <td><span class="badge {badge_class}">{o.status}</span></td>
-            <td>
-                <button class="btn-action btn-confirm" onclick="confirmWithOTP('{o.id}', '{o.delivery_otp}')">Confirm (OTP)</button>
-                <a class="btn-action btn-dispatch" href="/update-order-status?id={o.id}&status=Out%20for%20Delivery&key=SudarshanAkola2026">Dispatch</a>
-                <a class="btn-action btn-cancel" href="/update-order-status?id={o.id}&status=Cancelled&key=SudarshanAkola2026">Cancel</a>
-            </td>
-        </tr>
-        """
-    html += "</table></body></html>"
-    return html
+    return render_template(
+        'admin.html',
+        orders=orders,
+        total_orders=total_orders,
+        pending_count=pending_count,
+        completed_count=completed_count,
+        total_revenue=total_revenue
+    )
+
+
+@app.route('/send-cancel-otp', methods=['POST'])
+@admin_required
+def send_cancel_otp():
+    order_id = request.args.get('id')
+    order_obj = Order.query.get(order_id)
+    if not order_obj:
+        return jsonify({"success": False, "message": "Order not found"}), 404
+
+    if "Confirmed" in order_obj.status or "Cancelled" in order_obj.status:
+        return jsonify({"success": False, "message": "Order is already locked."}), 400
+
+    cancel_otp = str(random.randint(1000, 9999))
+    order_obj.cancel_otp = cancel_otp
+    db.session.commit()
+
+    email_sent = send_cancellation_otp_email(
+        order_obj.customer_name,
+        order_obj.email,
+        order_obj.id,
+        order_obj.item_name,
+        cancel_otp
+    )
+
+    if email_sent:
+        return jsonify({"success": True, "email": order_obj.email})
+    return jsonify({"success": False, "message": "Failed to send email. Check SMTP settings."})
+
 
 @app.route('/update-order-status')
+@admin_required
 def update_order_status():
-    secret_key = request.args.get('key')
-    if secret_key != 'SudarshanAkola2026':
-        return "<h1>Unauthorized</h1>", 401
-
     order_id = request.args.get('id')
     new_status = request.args.get('status')
+    provided_otp = request.args.get('otp', '').strip()
     order_to_update = Order.query.get(order_id)
-    if order_to_update:
+
+    if order_to_update and "Confirmed" not in order_to_update.status and "Cancelled" not in order_to_update.status:
+        if new_status == "Cancelled":
+            if not order_to_update.cancel_otp or provided_otp != order_to_update.cancel_otp:
+                return "<script>alert('❌ Invalid Cancellation OTP! Order was NOT cancelled.'); window.location.href='/admin';</script>"
+
         order_to_update.status = new_status
         db.session.commit()
 
-    return redirect(url_for('admin_orders', key='SudarshanAkola2026'))
+        if new_status == "Confirmed & Verified":
+            send_delivery_confirmed_notification(
+                order_to_update.customer_name,
+                order_to_update.email,
+                order_to_update.phone,
+                order_to_update.id,
+                order_to_update.item_name,
+                order_to_update.address
+            )
+
+    return redirect(url_for('admin_orders'))
+
+
+with app.app_context():
+    db.create_all()
+    run_auto_migrations()
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
