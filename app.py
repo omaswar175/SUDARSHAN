@@ -33,10 +33,10 @@ db = SQLAlchemy(app)
 # ==============================================================================
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "sk_test_your_stripe_secret_key")
 STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "pk_test_your_stripe_public_key")
-SIDESHIFT_AFFILIATE_ID = os.environ.get("SIDESHIFT_AFFILIATE_ID", "sudarshan")
+SIDESHIFT_AFFILIATE_ID = os.environ.get("SIDESHIFT_AFFILIATE_ID", "LAWo3JHJh")
 
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "omaswar175@gmail.com")
-GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "YOUR_16_CHAR_GMAIL_APP_PASSWORD")
+GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "tpdb awfp gcyp uaaz")
 ADMIN_SECRET_CODE = os.environ.get("ADMIN_SECRET_CODE", "SudarshanAkola2026")
 
 ADMIN_PHONE_NUMBER = "+918830446585"
@@ -676,9 +676,15 @@ def update_order_status():
     return redirect(url_for('admin_orders'))
 
 
+# ==============================================================================
+# SAFE STARTUP INITIALIZATION (VERCEL SERVERLESS COMPATIBLE)
+# ==============================================================================
 with app.app_context():
-    db.create_all()
-    run_auto_migrations()
+    try:
+        db.create_all()
+        run_auto_migrations()
+    except Exception as e:
+        print(f"Database init warning: {e}")
 
 if __name__ == '__main__':
     app.run(debug=True)

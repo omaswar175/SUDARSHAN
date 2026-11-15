@@ -1,3 +1,7 @@
-from app import app
+import os
+import sys
 
-# Vercel looks for the 'app' WSGI callable
+# Ensure root directory is in Python path so 'app.py' can be imported
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app import app
