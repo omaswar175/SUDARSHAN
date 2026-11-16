@@ -1,5 +1,6 @@
 import os
 import random
+import re
 import smtplib
 from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
@@ -270,6 +271,19 @@ class Order(db.Model):
     cancel_otp = db.Column(db.String(10), nullable=True)
 
 
+class Product(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(50), unique=True, nullable=False)
+    name = db.Column(db.String(100), nullable=False)          # Display title e.g. "Crispy Chakli"
+    short_name = db.Column(db.String(60), nullable=False)     # Cart label e.g. "Chakli"
+    badge_text = db.Column(db.String(60), default="★ BESTSELLER")
+    price_250g = db.Column(db.Integer, nullable=False)
+    price_500g = db.Column(db.Integer, nullable=False)
+    price_1kg = db.Column(db.Integer, nullable=False)
+    stock_qty = db.Column(db.Integer, default=25)             # Available packs in stock
+    is_available = db.Column(db.Boolean, default=True)
+
+
 def run_auto_migrations():
     """Safely adds any missing columns to existing SQLite/PostgreSQL tables."""
     with db.engine.connect() as conn:
@@ -283,6 +297,67 @@ def run_auto_migrations():
                 conn.commit()
             except Exception:
                 conn.rollback()
+
+
+def seed_default_products():
+    """Seeds initial Sudarshan Foods products if the Product table is empty."""
+    if Product.query.count() == 0:
+        defaults = [
+            Product(
+                slug="chakli",
+                name="Crispy Chakli",
+                short_name="Chakli",
+                badge_text="★ BESTSELLER",
+                price_250g=90,
+                price_500g=160,
+                price_1kg=310,
+                stock_qty=25,
+                is_available=True
+            ),
+            Product(
+                slug="chorafalli",
+                name="Special Chorafalli",
+                short_name="Chorafalli",
+                badge_text="🔥 FRESH BATCH",
+                price_250g=85,
+                price_500g=150,
+                price_1kg=290,
+                stock_qty=20,
+                is_available=True
+            ),
+            Product(
+                slug="makka",
+                name="Roasted Makka Poha",
+                short_name="Makka Poha",
+                badge_text="✨ LIGHT & CRISPY",
+                price_250g=70,
+                price_500g=120,
+                price_1kg=230,
+                stock_qty=30,
+                is_available=True
+            ),
+        ]
+        db.session.add_all(defaults)
+        db.session.commit()
+
+
+def adjust_product_stock(items_summary, restore=False):
+    """Deducts (or restores on cancel) ordered pack quantities from Product.stock_qty."""
+    products = Product.query.all()
+    for prod in products:
+        pattern = rf"{re.escape(prod.short_name)}\s*\([^)]+\)\s*x\s*(\d+)"
+        matches = re.findall(pattern, items_summary)
+        if matches:
+            total_packs = sum(int(m) for m in matches)
+            if restore:
+                prod.stock_qty = (prod.stock_qty or 0) + total_packs
+                if prod.stock_qty > 0:
+                    prod.is_available = True
+            else:
+                prod.stock_qty = max(0, (prod.stock_qty or 0) - total_packs)
+                if prod.stock_qty == 0:
+                    prod.is_available = False
+    db.session.commit()
 
 
 def login_required(f):
@@ -387,11 +462,13 @@ def order():
     reorder_items = request.args.get('reorder', '')
     user = User.query.get(session.get('user_id'))
     saved_address = user.saved_address if user and user.saved_address else ''
+    products = Product.query.order_by(Product.id.asc()).all()
     return render_template(
         'order.html',
         selected_item=selected_item,
         reorder_items=reorder_items,
-        saved_address=saved_address
+        saved_address=saved_address,
+        products=products
     )
 
 
@@ -436,6 +513,7 @@ def place_order():
         )
         db.session.add(new_order)
         db.session.commit()
+        adjust_product_stock(items_summary, restore=False)
 
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=['card'],
@@ -479,6 +557,7 @@ def place_order():
     )
     db.session.add(new_order)
     db.session.commit()
+    adjust_product_stock(items_summary, restore=False)
 
     send_email_notification(name, email, phone, items_summary, full_address, payment_ref, delivery_otp)
     send_whatsapp_and_sms(name, phone, items_summary, full_address, delivery_otp)
@@ -583,7 +662,7 @@ def update_profile():
 
 
 # ==============================================================================
-# ADMIN LOGIN, DASHBOARD & OTP ENDPOINTS
+# ADMIN LOGIN, DASHBOARD, MENU PRICING & OTP ENDPOINTS
 # ==============================================================================
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
@@ -606,6 +685,7 @@ def admin_logout():
 @admin_required
 def admin_orders():
     orders = Order.query.order_by(Order.id.desc()).all()
+    products = Product.query.order_by(Product.id.asc()).all()
     total_orders = len(orders)
     pending_count = sum(1 for o in orders if "Confirmed" not in o.status and "Cancelled" not in o.status)
     completed_count = sum(1 for o in orders if "Confirmed" in o.status)
@@ -614,11 +694,67 @@ def admin_orders():
     return render_template(
         'admin.html',
         orders=orders,
+        products=products,
         total_orders=total_orders,
         pending_count=pending_count,
         completed_count=completed_count,
         total_revenue=total_revenue
     )
+
+
+@app.route('/admin/update-product/<int:product_id>', methods=['POST'])
+@admin_required
+def update_product(product_id):
+    prod = Product.query.get_or_404(product_id)
+    prod.name = request.form.get('name', prod.name).strip()
+    prod.short_name = request.form.get('short_name', prod.short_name).strip()
+    prod.price_250g = int(request.form.get('price_250g', prod.price_250g))
+    prod.price_500g = int(request.form.get('price_500g', prod.price_500g))
+    prod.price_1kg = int(request.form.get('price_1kg', prod.price_1kg))
+    prod.stock_qty = max(0, int(request.form.get('stock_qty', prod.stock_qty)))
+    prod.is_available = (request.form.get('is_available') == 'on') and (prod.stock_qty > 0)
+    db.session.commit()
+    return redirect(url_for('admin_orders'))
+
+
+@app.route('/admin/add-product', methods=['POST'])
+@admin_required
+def add_product():
+    name = request.form.get('name', '').strip()
+    short_name = request.form.get('short_name', '').strip() or name
+    badge_text = request.form.get('badge_text', '★ SPECIAL').strip()
+    price_250g = int(request.form.get('price_250g', 0) or 0)
+    price_500g = int(request.form.get('price_500g', 0) or 0)
+    price_1kg = int(request.form.get('price_1kg', 0) or 0)
+    stock_qty = max(0, int(request.form.get('stock_qty', 20) or 0))
+
+    if name and price_500g > 0:
+        slug = re.sub(r'[^a-z0-9]+', '_', short_name.lower()).strip('_')
+        if Product.query.filter_by(slug=slug).first():
+            slug = f"{slug}_{random.randint(10, 99)}"
+        new_prod = Product(
+            slug=slug,
+            name=name,
+            short_name=short_name,
+            badge_text=badge_text,
+            price_250g=price_250g or round(price_500g * 0.55),
+            price_500g=price_500g,
+            price_1kg=price_1kg or round(price_500g * 1.9),
+            stock_qty=stock_qty,
+            is_available=(stock_qty > 0)
+        )
+        db.session.add(new_prod)
+        db.session.commit()
+    return redirect(url_for('admin_orders'))
+
+
+@app.route('/admin/delete-product/<int:product_id>', methods=['POST'])
+@admin_required
+def delete_product(product_id):
+    prod = Product.query.get_or_404(product_id)
+    db.session.delete(prod)
+    db.session.commit()
+    return redirect(url_for('admin_orders'))
 
 
 @app.route('/send-cancel-otp', methods=['POST'])
@@ -661,6 +797,7 @@ def update_order_status():
         if new_status == "Cancelled":
             if not order_to_update.cancel_otp or provided_otp != order_to_update.cancel_otp:
                 return "<script>alert('❌ Invalid Cancellation OTP! Order was NOT cancelled.'); window.location.href='/admin';</script>"
+            adjust_product_stock(order_to_update.item_name, restore=True)
 
         order_to_update.status = new_status
         db.session.commit()
@@ -685,6 +822,7 @@ with app.app_context():
     try:
         db.create_all()
         run_auto_migrations()
+        seed_default_products()
     except Exception as e:
         print(f"Database init warning: {e}")
 

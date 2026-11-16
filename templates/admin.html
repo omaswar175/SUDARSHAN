@@ -11,6 +11,13 @@
         .stat-card { background: #2E1437; color: #FFFFFF; padding: 18px; border-radius: 12px; border-bottom: 4px solid #F59E0B; }
         .stat-card h4 { color: #EEF1F5; font-size: 0.9rem; margin-bottom: 6px; }
         .stat-card p { color: #F59E0B; font-size: 1.8rem; font-weight: 800; margin: 0; }
+        .section-box { background: #FFFFFF; border-radius: 12px; padding: 20px; margin-bottom: 28px; box-shadow: 0 6px 18px rgba(46,20,55,0.08); }
+        .section-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+        .section-header h3 { color: #2E1437; margin: 0; font-size: 1.15rem; }
+        .add-prod-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .add-prod-form input { padding: 8px 10px; border: 1.5px solid #D5DCE6; border-radius: 8px; font-size: 0.85rem; }
+        .prod-input { width: 76px; padding: 6px 8px; border: 1.5px solid #D5DCE6; border-radius: 6px; font-weight: 700; color: #2E1437; }
+        .prod-text { width: 145px; padding: 6px 8px; border: 1.5px solid #D5DCE6; border-radius: 6px; font-weight: 600; color: #2E1437; }
         .filter-bar { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
         .filter-bar input { padding: 10px 14px; border: 1.5px solid #D5DCE6; border-radius: 8px; min-width: 260px; }
         .tab-btn { padding: 8px 14px; border: 1.5px solid #2E1437; background: #FFFFFF; color: #2E1437; border-radius: 8px; font-weight: 700; cursor: pointer; }
@@ -46,6 +53,66 @@
             <div class="stat-card"><h4>Gross Revenue</h4><p>₹{{ total_revenue }}</p></div>
         </div>
 
+        <!-- MENU PRICING & STOCK INVENTORY MANAGEMENT -->
+        <div class="section-box">
+            <div class="section-header">
+                <h3>🍿 Manage Menu Prices & Stock Availability</h3>
+                <form action="{{ url_for('add_product') }}" method="POST" class="add-prod-form">
+                    <input type="text" name="name" placeholder="Display Name (e.g. Besan Ladoo)" required style="width: 170px;">
+                    <input type="text" name="short_name" placeholder="Short Name" required style="width: 110px;">
+                    <input type="number" name="price_250g" placeholder="250g ₹" required style="width: 75px;">
+                    <input type="number" name="price_500g" placeholder="500g ₹" required style="width: 75px;">
+                    <input type="number" name="price_1kg" placeholder="1kg ₹" required style="width: 75px;">
+                    <input type="number" name="stock_qty" placeholder="Stock" value="20" required style="width: 70px;">
+                    <button type="submit" class="btn-act" style="background: #2E1437; color: #F59E0B; padding: 9px 14px;">+ Add Item</button>
+                </form>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table>
+                    <tr>
+                        <th>Display Title</th>
+                        <th>Cart Label</th>
+                        <th>250g (₹)</th>
+                        <th>500g (₹)</th>
+                        <th>1kg (₹)</th>
+                        <th>Available Stock</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                    {% for p in products %}
+                    <tr>
+                        <form action="{{ url_for('update_product', product_id=p.id) }}" method="POST">
+                            <td><input type="text" name="name" value="{{ p.name }}" class="prod-text" required></td>
+                            <td><input type="text" name="short_name" value="{{ p.short_name }}" class="prod-text" style="width: 115px;" required></td>
+                            <td><input type="number" name="price_250g" value="{{ p.price_250g }}" min="1" class="prod-input" required></td>
+                            <td><input type="number" name="price_500g" value="{{ p.price_500g }}" min="1" class="prod-input" required></td>
+                            <td><input type="number" name="price_1kg" value="{{ p.price_1kg }}" min="1" class="prod-input" required></td>
+                            <td><input type="number" name="stock_qty" value="{{ p.stock_qty }}" min="0" class="prod-input" required></td>
+                            <td>
+                                <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 700;">
+                                    <input type="checkbox" name="is_available" {% if p.is_available and p.stock_qty > 0 %}checked{% endif %}>
+                                    {% if p.is_available and p.stock_qty > 0 %}
+                                        <span class="badge confirmed">In Stock</span>
+                                    {% else %}
+                                        <span class="badge cancelled">Sold Out</span>
+                                    {% endif %}
+                                </label>
+                            </td>
+                            <td style="white-space: nowrap;">
+                                <button type="submit" class="btn-act" style="background: #F59E0B; color: #2E1437;">Save</button>
+                        </form>
+                                <form action="{{ url_for('delete_product', product_id=p.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete {{ p.name }} from menu?');">
+                                    <button type="submit" class="btn-act" style="background: #DC2626;">Delete</button>
+                                </form>
+                            </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <!-- ORDERS MANAGEMENT -->
         <div class="filter-bar">
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <button class="tab-btn active" onclick="filterStatus('all', this)">All Orders</button>

@@ -69,84 +69,49 @@
                     <input type="hidden" id="cart_summary_input" name="cart_summary" value="">
                     <input type="hidden" id="final_amount_input" name="final_amount" value="0">
 
-                    <!-- Swiggy-Style Menu Selection with Pack Size Switcher -->
+                    <!-- Dynamic Swiggy-Style Menu Selection with Pack Size Switcher & Stock -->
                     <div class="menu-container">
                         <label class="menu-section-label">🍿 Select Snacks & Pack Size:</label>
 
-                        <!-- Item 1: Chakli -->
-                        <div class="menu-item-card">
+                        {% for p in products %}
+                        {% set in_stock = p.is_available and p.stock_qty > 0 %}
+                        <div class="menu-item-card" style="{% if not in_stock %}opacity: 0.6;{% endif %}">
                             <div class="item-info">
-                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
                                     <span class="veg-icon"><span></span></span>
-                                    <span class="bestseller-tag">★ BESTSELLER</span>
+                                    <span class="bestseller-tag">{{ p.badge_text }}</span>
+                                    {% if in_stock %}
+                                        <span style="font-size: 0.75rem; font-weight: 700; color: #059669; background: #D1FAE5; padding: 2px 7px; border-radius: 6px;">
+                                            {{ p.stock_qty }} packs left
+                                        </span>
+                                    {% else %}
+                                        <span style="font-size: 0.75rem; font-weight: 700; color: #991B1B; background: #FEE2E2; padding: 2px 7px; border-radius: 6px;">
+                                            Out of Stock
+                                        </span>
+                                    {% endif %}
                                 </div>
-                                <h4>Crispy Chakli</h4>
-                                <p class="item-price" id="price-display-chakli">₹160</p>
+                                <h4>{{ p.name }}</h4>
+                                <p class="item-price" id="price-display-{{ p.slug }}">₹{{ p.price_500g }}</p>
                                 <div class="size-pills">
-                                    <button type="button" class="size-pill" onclick="setPackSize('chakli', '250g', 90, this)">250g</button>
-                                    <button type="button" class="size-pill active" onclick="setPackSize('chakli', '500g', 160, this)">500g</button>
-                                    <button type="button" class="size-pill" onclick="setPackSize('chakli', '1kg', 310, this)">1kg</button>
+                                    <button type="button" class="size-pill" onclick="setPackSize('{{ p.slug }}', '250g', {{ p.price_250g }}, this)">250g</button>
+                                    <button type="button" class="size-pill active" onclick="setPackSize('{{ p.slug }}', '500g', {{ p.price_500g }}, this)">500g</button>
+                                    <button type="button" class="size-pill" onclick="setPackSize('{{ p.slug }}', '1kg', {{ p.price_1kg }}, this)">1kg</button>
                                 </div>
                             </div>
                             <div class="swiggy-btn-wrapper">
-                                <button type="button" class="btn-add-swiggy" id="add-btn-chakli" onclick="updateCart('chakli', 1)">ADD</button>
-                                <div class="swiggy-stepper" id="stepper-chakli">
-                                    <button type="button" class="stepper-btn" onclick="updateCart('chakli', -1)">−</button>
-                                    <span class="stepper-count" id="count-chakli">1</span>
-                                    <button type="button" class="stepper-btn" onclick="updateCart('chakli', 1)">+</button>
-                                </div>
+                                {% if in_stock %}
+                                    <button type="button" class="btn-add-swiggy" id="add-btn-{{ p.slug }}" onclick="updateCart('{{ p.slug }}', 1)">ADD</button>
+                                    <div class="swiggy-stepper" id="stepper-{{ p.slug }}">
+                                        <button type="button" class="stepper-btn" onclick="updateCart('{{ p.slug }}', -1)">−</button>
+                                        <span class="stepper-count" id="count-{{ p.slug }}">1</span>
+                                        <button type="button" class="stepper-btn" onclick="updateCart('{{ p.slug }}', 1)">+</button>
+                                    </div>
+                                {% else %}
+                                    <button type="button" class="btn-add-swiggy" disabled style="background: #E5E7EB; color: #6B7280; border-color: #D1D5DB; cursor: not-allowed;">SOLD OUT</button>
+                                {% endif %}
                             </div>
                         </div>
-
-                        <!-- Item 2: Chorafalli -->
-                        <div class="menu-item-card">
-                            <div class="item-info">
-                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                                    <span class="veg-icon"><span></span></span>
-                                    <span class="bestseller-tag">🔥 FRESH BATCH</span>
-                                </div>
-                                <h4>Special Chorafalli</h4>
-                                <p class="item-price" id="price-display-chorafalli">₹150</p>
-                                <div class="size-pills">
-                                    <button type="button" class="size-pill" onclick="setPackSize('chorafalli', '250g', 85, this)">250g</button>
-                                    <button type="button" class="size-pill active" onclick="setPackSize('chorafalli', '500g', 150, this)">500g</button>
-                                    <button type="button" class="size-pill" onclick="setPackSize('chorafalli', '1kg', 290, this)">1kg</button>
-                                </div>
-                            </div>
-                            <div class="swiggy-btn-wrapper">
-                                <button type="button" class="btn-add-swiggy" id="add-btn-chorafalli" onclick="updateCart('chorafalli', 1)">ADD</button>
-                                <div class="swiggy-stepper" id="stepper-chorafalli">
-                                    <button type="button" class="stepper-btn" onclick="updateCart('chorafalli', -1)">−</button>
-                                    <span class="stepper-count" id="count-chorafalli">1</span>
-                                    <button type="button" class="stepper-btn" onclick="updateCart('chorafalli', 1)">+</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Item 3: Makka Poha -->
-                        <div class="menu-item-card">
-                            <div class="item-info">
-                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                                    <span class="veg-icon"><span></span></span>
-                                    <span class="bestseller-tag">✨ LIGHT & CRISPY</span>
-                                </div>
-                                <h4>Roasted Makka Poha</h4>
-                                <p class="item-price" id="price-display-makka">₹120</p>
-                                <div class="size-pills">
-                                    <button type="button" class="size-pill" onclick="setPackSize('makka', '250g', 70, this)">250g</button>
-                                    <button type="button" class="size-pill active" onclick="setPackSize('makka', '500g', 120, this)">500g</button>
-                                    <button type="button" class="size-pill" onclick="setPackSize('makka', '1kg', 230, this)">1kg</button>
-                                </div>
-                            </div>
-                            <div class="swiggy-btn-wrapper">
-                                <button type="button" class="btn-add-swiggy" id="add-btn-makka" onclick="updateCart('makka', 1)">ADD</button>
-                                <div class="swiggy-stepper" id="stepper-makka">
-                                    <button type="button" class="stepper-btn" onclick="updateCart('makka', -1)">−</button>
-                                    <span class="stepper-count" id="count-makka">1</span>
-                                    <button type="button" class="stepper-btn" onclick="updateCart('makka', 1)">+</button>
-                                </div>
-                            </div>
-                        </div>
+                        {% endfor %}
                     </div>
 
                     <!-- Promo Coupon Box -->
@@ -276,9 +241,15 @@
 
     <script>
     const catalog = {
-        chakli: { title: "Chakli", size: "500g", price: 160, qty: 0 },
-        chorafalli: { title: "Chorafalli", size: "500g", price: 150, qty: 0 },
-        makka: { title: "Makka Poha", size: "500g", price: 120, qty: 0 }
+        {% for p in products %}
+        "{{ p.slug }}": {
+            title: "{{ p.short_name }}",
+            size: "500g",
+            price: {{ p.price_500g }},
+            qty: 0,
+            maxStock: {{ p.stock_qty if p.is_available else 0 }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
     };
 
     let activeCoupon = null;
@@ -288,14 +259,14 @@
         const preselected = "{{ selected_item }}".toLowerCase();
         const reorderStr = "{{ reorder_items }}".toLowerCase();
 
-        if (reorderStr) {
-            if (reorderStr.includes("chakli")) updateCart("chakli", 1);
-            if (reorderStr.includes("chorafalli")) updateCart("chorafalli", 1);
-            if (reorderStr.includes("makka")) updateCart("makka", 1);
-        } else if (preselected) {
-            if (preselected.includes("chakli")) updateCart("chakli", 1);
-            else if (preselected.includes("chorafalli")) updateCart("chorafalli", 1);
-            else if (preselected.includes("makka")) updateCart("makka", 1);
+        for (const key in catalog) {
+            if (catalog[key].maxStock <= 0) continue;
+            const titleLower = catalog[key].title.toLowerCase();
+            if (reorderStr && (reorderStr.includes(key) || reorderStr.includes(titleLower))) {
+                updateCart(key, 1);
+            } else if (preselected && (preselected.includes(key) || preselected.includes(titleLower))) {
+                updateCart(key, 1);
+            }
         }
     };
 
@@ -312,20 +283,28 @@
     }
 
     function updateCart(itemKey, change) {
-        catalog[itemKey].qty += change;
-        if (catalog[itemKey].qty < 0) catalog[itemKey].qty = 0;
+        const item = catalog[itemKey];
+        if (!item) return;
+
+        if (change > 0 && item.qty + change > item.maxStock) {
+            alert("⚠️ Only " + item.maxStock + " pack" + (item.maxStock > 1 ? "s" : "") + " of " + item.title + " available in stock!");
+            return;
+        }
+
+        item.qty += change;
+        if (item.qty < 0) item.qty = 0;
 
         const addBtn = document.getElementById("add-btn-" + itemKey);
         const stepper = document.getElementById("stepper-" + itemKey);
         const countSpan = document.getElementById("count-" + itemKey);
 
-        if (catalog[itemKey].qty === 0) {
+        if (item.qty === 0) {
             addBtn.style.display = "inline-block";
             stepper.style.display = "none";
         } else {
             addBtn.style.display = "none";
             stepper.style.display = "flex";
-            countSpan.innerText = catalog[itemKey].qty;
+            countSpan.innerText = item.qty;
         }
 
         renderCartSummary();
